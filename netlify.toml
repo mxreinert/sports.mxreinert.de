@@ -1,0 +1,20 @@
+# Netlify: statische Seite ohne Build. Netlify holt den Code von GitHub (Branch main) und liefert src/ aus.
+[build]
+  publish = "src"
+  command = ""
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Strenge Content-Security-Policy: nur eigene Dateien, Daten nur zu Supabase. Kein Tracking, keine fremden Skripte.
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000"
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

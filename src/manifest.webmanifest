@@ -1,0 +1,16 @@
+{
+  "name": "mx sports",
+  "short_name": "sports",
+  "description": "Training, Ernährung und Gewicht an einem Ort – mit Wochenringen und Berichten.",
+  "lang": "de",
+  "start_url": "/#/heute",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
