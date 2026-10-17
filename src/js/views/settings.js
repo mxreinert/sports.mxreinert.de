@@ -269,7 +269,7 @@ function volumen(root, { snap, now, go }) {
     await db.addVersion('muscles', { valid_from: validFrom.get(), targets, secondary_factor: 0.5, primary_only: mode === 'primary', note: 'Geändert in der App' });
     toast('Volumen-Ziele gespeichert');
   } }))));
-  root.append(versionHistory(snap.muscles, v => `${v.primary_only ? 'nur Primär' : 'Sekundär ½'} · Brust ${v.targets?.chest?.join('–')} · Rücken ${v.targets?.back?.join('–')} · Quads ${v.targets?.quads?.join('–')}`, 'muscles', now));
+  root.append(versionHistory(snap.muscles, v => `${v.primary_only ? 'nur Primär' : 'Sekundär ½'} · Brust ${v.targets?.chest?.join('–')} · Lat ${v.targets?.lats?.join('–') ?? '–'} · ob. Rücken ${v.targets?.upper_back?.join('–') ?? '–'} · Quads ${v.targets?.quads?.join('–')}`, 'muscles', now));
 }
 
 // ---------- Übungs-Zuordnung ----------

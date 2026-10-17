@@ -24,15 +24,19 @@ export function e1rm(weight, reps) {
  * Muskelgruppen einer Übung. Reihenfolge: eigene Zuordnung in der App > Hevy-Vorlage (über die Gruppen-Zuordnung).
  * @returns {{primary: string|null, secondary: string[], source: 'manuell'|'hevy'|'fehlt'}}
  */
+const KNOWN = new Set(MUSCLES.map(m => m.id));
+const known = g => (KNOWN.has(g) ? g : null);
+
 export function musclesOf(templateId, { mappings = {}, templates = {}, groupMap = {} }) {
   const m = mappings[templateId];
-  if (m && m.primary) {
-    return { primary: m.primary, secondary: (m.secondary || []).filter(g => g && g !== m.primary), source: 'manuell' };
+  // Eigene Zuordnung zählt nur mit einer gültigen Gruppe (alte Gruppen wie „Rücken“ → zurück auf Hevy)
+  if (m && known(m.primary)) {
+    return { primary: m.primary, secondary: (m.secondary || []).filter(g => known(g) && g !== m.primary), source: 'manuell' };
   }
   const t = templates[templateId];
-  const primary = t ? groupMap[t.primary] ?? null : null;
+  const primary = t ? known(groupMap[t.primary]) : null;
   if (!primary) return { primary: null, secondary: [], source: 'fehlt' };
-  const secondary = [...new Set((t.secondary || []).map(g => groupMap[g]).filter(g => g && g !== primary))];
+  const secondary = [...new Set((t.secondary || []).map(g => known(groupMap[g])).filter(g => g && g !== primary))];
   return { primary, secondary, source: 'hevy' };
 }
 

@@ -81,6 +81,7 @@ export async function loadDemo({ weeks = 12 } = {}) {
   const exceptions = [{ id: 'demo-e0', week: deloadWeek, reason: 'deload', mode: 'reduce', factor: 0.6, rings: ['gym'], note: 'Deload-Woche nach Block 1', created_at: created }];
   const mappings = [
     { template_id: 'CUSTOM-02', title: NAMES['CUSTOM-02'], primary: 'quads', secondary: ['glutes'] },
+    { template_id: 'BE640BA0', title: NAMES.BE640BA0, primary: 'rear_delts', secondary: ['upper_back'] },
     ...['79D0BB3A', 'D04AC939', '2B4B7310', '7B8D84E8', '55E6546F'].map(id => ({ template_id: id, title: NAMES[id], main: true })),
   ];
 

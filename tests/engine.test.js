@@ -220,9 +220,9 @@ test('Sätze pro Muskelgruppe: primär 1, sekundär 0,5, eigene Zuordnung hat Vo
   assert.equal(r.sets.chest, 4);
   assert.equal(r.sets.triceps, 2);
   assert.equal(r.unmapped[0].sets, 3);
-  lookup.mappings = { custom: { primary: 'back', secondary: ['biceps'] } };
+  lookup.mappings = { custom: { primary: 'lats', secondary: ['biceps'] } };
   r = muscleSets([w], lookup, { secondary_factor: 0.5 });
-  assert.equal(r.sets.back, 3);
+  assert.equal(r.sets.lats, 3);
   assert.equal(r.sets.biceps, 1.5);
   assert.equal(r.unmapped.length, 0);
   r = muscleSets([w], lookup, { primary_only: true });
@@ -230,9 +230,22 @@ test('Sätze pro Muskelgruppe: primär 1, sekundär 0,5, eigene Zuordnung hat Vo
   assert.equal(musclesOf('custom', lookup).source, 'manuell');
 });
 
-test('Gruppen-Zuordnung: Lat + oberer Rücken werden nicht doppelt gezählt', () => {
-  const lookup = { templates: { row: { id: 'row', primary: 'upper_back', secondary: ['lats', 'biceps'] } }, mappings: {}, groupMap: DEFAULT_GROUP_MAP };
-  assert.deepEqual(musclesOf('row', lookup), { primary: 'back', secondary: ['biceps'], source: 'hevy' });
+test('Rücken getrennt: Latissimus, oberer und unterer Rücken; Trapez zählt zum oberen Rücken', () => {
+  const lookup = { templates: {
+    row: { id: 'row', primary: 'upper_back', secondary: ['lats', 'biceps', 'traps'] },
+    rdl: { id: 'rdl', primary: 'hamstrings', secondary: ['glutes', 'lower_back'] },
+  }, mappings: {}, groupMap: DEFAULT_GROUP_MAP };
+  assert.deepEqual(musclesOf('row', lookup), { primary: 'upper_back', secondary: ['lats', 'biceps'], source: 'hevy' });
+  assert.deepEqual(musclesOf('rdl', lookup).secondary, ['glutes', 'lower_back']);
+});
+
+test('Alte Zuordnung „Rücken“ fällt auf Hevy zurück, hintere Schulter nur manuell', () => {
+  const templates = { face: { id: 'face', primary: 'shoulders', secondary: ['upper_back'] } };
+  const old = { templates, groupMap: DEFAULT_GROUP_MAP, mappings: { face: { primary: 'back', secondary: ['back'] } } };
+  assert.equal(musclesOf('face', old).source, 'hevy');
+  assert.equal(musclesOf('face', old).primary, 'shoulders');
+  const manual = { ...old, mappings: { face: { primary: 'rear_delts', secondary: ['upper_back', 'back'] } } };
+  assert.deepEqual(musclesOf('face', manual), { primary: 'rear_delts', secondary: ['upper_back'], source: 'manuell' });
 });
 
 // ---------- Tag, Streak, Gewicht ----------

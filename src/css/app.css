@@ -203,7 +203,7 @@ button.check:active { background: var(--surface-2); }
 .lg-line { width: 14px; height: 3px; border-radius: 2px; }
 
 .rbars { display: flex; flex-direction: column; gap: 9px; }
-.rbar { display: grid; grid-template-columns: 86px 1fr 74px; align-items: center; gap: 10px; }
+.rbar { display: grid; grid-template-columns: 108px 1fr 74px; align-items: center; gap: 10px; }
 .rbar-label { font-size: 13.5px; }
 .rbar-track { position: relative; height: 10px; border-radius: 5px; background: var(--surface-2); }
 .rbar-band { position: absolute; top: -3px; bottom: -3px; border-radius: 6px; background: rgba(48, 209, 88, .14); box-shadow: inset 0 0 0 1px rgba(48, 209, 88, .38); }

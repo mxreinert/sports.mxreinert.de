@@ -22,8 +22,11 @@ export const PHASE = Object.fromEntries(PHASES.map(p => [p.id, p]));
 
 export const MUSCLES = [
   { id: 'chest', label: 'Brust' },
-  { id: 'back', label: 'Rücken' },
-  { id: 'shoulders', label: 'Schultern' },
+  { id: 'lats', label: 'Latissimus' },
+  { id: 'upper_back', label: 'Oberer Rücken' },
+  { id: 'lower_back', label: 'Unterer Rücken' },
+  { id: 'shoulders', label: 'Schultern (vorne/seitlich)' },
+  { id: 'rear_delts', label: 'Hintere Schulter' },
   { id: 'biceps', label: 'Bizeps' },
   { id: 'triceps', label: 'Trizeps' },
   { id: 'quads', label: 'Quadrizeps' },
@@ -47,9 +50,9 @@ export const HEVY_GROUP_LABEL = Object.fromEntries(HEVY_GROUPS);
 /** Hevy-Gruppe → App-Gruppe (null = zählt nicht). In den Einstellungen änderbar. */
 export const DEFAULT_GROUP_MAP = {
   abdominals: 'abs', abductors: 'glutes', adductors: null, biceps: 'biceps', calves: 'calves', cardio: null,
-  chest: 'chest', forearms: null, full_body: null, glutes: 'glutes', hamstrings: 'hamstrings', lats: 'back',
-  lower_back: null, neck: null, other: null, quadriceps: 'quads', shoulders: 'shoulders', traps: 'back',
-  triceps: 'triceps', upper_back: 'back',
+  chest: 'chest', forearms: null, full_body: null, glutes: 'glutes', hamstrings: 'hamstrings', lats: 'lats',
+  lower_back: 'lower_back', neck: null, other: null, quadriceps: 'quads', shoulders: 'shoulders', traps: 'upper_back',
+  triceps: 'triceps', upper_back: 'upper_back',
 };
 
 export const WEEKDAYS = [
@@ -83,7 +86,8 @@ export const DEFAULTS = {
   /** Sätze pro Muskelgruppe (versioniert). */
   muscles: {
     targets: {
-      chest: [10, 16], back: [12, 18], shoulders: [10, 16], biceps: [8, 14], triceps: [8, 14],
+      chest: [10, 16], lats: [8, 12], upper_back: [8, 12], lower_back: [3, 8], shoulders: [8, 14], rear_delts: [6, 10],
+      biceps: [8, 14], triceps: [8, 14],
       quads: [10, 16], hamstrings: [8, 12], glutes: [8, 14], calves: [6, 12], abs: [6, 10],
     },
     secondary_factor: 0.5,

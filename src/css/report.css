@@ -57,7 +57,7 @@
 .doc .state-open, .doc .state-off { box-shadow: inset 0 0 0 1.5px var(--text-4); }
 
 .doc .rbars { gap: 6px; }
-.doc .rbar { grid-template-columns: 90px 1fr 80px; }
+.doc .rbar { grid-template-columns: 150px 1fr 80px; }
 .doc .rbar-track { background: var(--surface-2); height: 9px; }
 .doc .rbar-band { background: rgba(31, 163, 74, .12); box-shadow: inset 0 0 0 1px rgba(31, 163, 74, .45); }
 .doc .rbar-label, .doc .rbar-val { font-size: 12px; }
