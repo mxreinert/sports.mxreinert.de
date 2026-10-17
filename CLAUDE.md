@@ -1,4 +1,4 @@
-# CLAUDE.md – sports.mxreinert.de
+# CLAUDE.md – mxsports.mxreinert.de
 
 Persönlicher Sport-Tracker für Max (ein Nutzer). Details: `README.md`, Konzept: `docs/KONZEPT.md`.
 

@@ -79,7 +79,7 @@ globalThis.fetch = async (url, init = {}) => {
   throw new Error(`Unerwarteter Aufruf: ${url}`);
 };
 
-const req = (fn, body, aal = 'aal2', method = 'POST') => fn(new Request('https://sports.mxreinert.de/.netlify/functions/x', {
+const req = (fn, body, aal = 'aal2', method = 'POST') => fn(new Request('https://mxsports.mxreinert.de/.netlify/functions/x', {
   method, headers: { authorization: `Bearer ${jwt(aal)}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined,
 }));
 
@@ -104,7 +104,7 @@ test('Hevy-Key: falscher Key abgelehnt, richtiger verschlüsselt gespeichert', a
 test('Strava: state schützt vor fremden Rückleitungen, Verbindung wird verschlüsselt gespeichert', async () => {
   const { url } = await (await req(integrations, { action: 'strava-start' })).json();
   const auth = new URL(url);
-  assert.equal(auth.searchParams.get('redirect_uri'), 'https://sports.mxreinert.de/?strava=1');
+  assert.equal(auth.searchParams.get('redirect_uri'), 'https://mxsports.mxreinert.de/?strava=1');
   const state = auth.searchParams.get('state');
   assert.equal((await req(integrations, { action: 'strava-finish', code: 'c', state: 'gefälscht.abc', scope: 'read,activity:read_all' })).status, 400);
   assert.equal((await req(integrations, { action: 'strava-finish', code: 'c', state, scope: 'read' })).status, 400, 'ohne Aktivitäten-Recht');

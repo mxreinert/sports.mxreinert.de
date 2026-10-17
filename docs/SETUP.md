@@ -26,7 +26,7 @@ Reihenfolge einhalten. Alles läuft im Browser, keine CLI nötig. Dauer ca. 30 M
    - deine E-Mail + starkes Passwort · **Auto Confirm User: an**
 5. **Authentication → Multi-Factor** → TOTP (App Authenticator): **an** (ist Standard)
 6. **Authentication → URL Configuration**
-   - Site URL: `https://sports.mxreinert.de`
+   - Site URL: `https://mxsports.mxreinert.de`
    - Redirect URLs: `http://localhost:5600`
 7. **Project Settings → API Keys** bzw. **Data API**
    - **Project URL** und **anon / publishable key** an Claude geben → kommen in `src/js/env.js`
@@ -38,7 +38,7 @@ Reihenfolge einhalten. Alles läuft im Browser, keine CLI nötig. Dauer ca. 30 M
    - Branch `main` · Build command **leer** · Publish directory `src` (steht schon in `netlify.toml`)
 2. **Deploy** → läuft auf `https://<name>.netlify.app`
    - Projektnamen unter *Project configuration → Change project name* z. B. auf `mx-sports` setzen.
-3. **Domain management → Add a domain** → `sports.mxreinert.de` → *Verify* → „Add domain“
+3. **Domain management → Add a domain** → `mxsports.mxreinert.de` → *Verify* → „Add domain“
    - Netlify zeigt jetzt, worauf der DNS-Eintrag zeigen soll: `<name>.netlify.app`
 
 ## 4. IONOS (DNS)
@@ -52,7 +52,7 @@ Reihenfolge einhalten. Alles läuft im Browser, keine CLI nötig. Dauer ca. 30 M
 
 ## 5. Erster Login
 
-1. `https://sports.mxreinert.de` öffnen → E-Mail + Passwort
+1. `https://mxsports.mxreinert.de` öffnen → E-Mail + Passwort
 2. Beim ersten Mal: QR-Code mit der Authenticator-App scannen → Code eingeben (2FA)
 3. Setup-Overlay: Phase und Startwerte festlegen
 4. Optional: lokale Testdaten mitnehmen → lokal *Einstellungen → Daten → Exportieren*, online *Importieren*
@@ -70,8 +70,8 @@ Reihenfolge: erst Datenbank + Netlify-Variablen, **dann** deployen (Netlify lies
 
 1. **Supabase → SQL Editor:** `supabase/migrations/002_integrations.sql` ausführen (Tabelle für die verschlüsselten Zugänge).
 2. **Strava-App anlegen:** strava.com/settings/api
-   - Application Name `mx sports` · Category `Data Importer` · Website `https://sports.mxreinert.de`
-   - **Authorization Callback Domain:** `sports.mxreinert.de` (ohne https://)
+   - Application Name `mx sports` · Category `Data Importer` · Website `https://mxsports.mxreinert.de`
+   - **Authorization Callback Domain:** `mxsports.mxreinert.de` (ohne https://)
    - Danach **Client ID** und **Client Secret** notieren.
 3. **Netlify → Project configuration → Environment variables → Add a variable** (je eine):
    - `SECRETS_ENCRYPTION_KEY` → Wert aus der Datei `.env.local` im Projektordner (nur lokal, nie im Repo)
@@ -83,5 +83,5 @@ Reihenfolge: erst Datenbank + Netlify-Variablen, **dann** deployen (Netlify lies
    - Strava: *Mit Strava verbinden* → bei Strava bestätigen (Haken bei Aktivitäten lassen)
    - *Jetzt synchronisieren* – der erste Hevy-Import kann je nach Menge ein paar Durchläufe dauern.
 
-Strava-Verbindung funktioniert nur unter `sports.mxreinert.de` (Callback-Domain), nicht unter `*.netlify.app`.
+Strava-Verbindung funktioniert nur unter `mxsports.mxreinert.de` (Callback-Domain), nicht unter `*.netlify.app`.
 Danach synchronisiert die App beim Öffnen automatisch (höchstens alle 30 Minuten).

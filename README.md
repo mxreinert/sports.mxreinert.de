@@ -1,4 +1,4 @@
-# mx sports – sports.mxreinert.de
+# mx sports – mxsports.mxreinert.de
 
 Persönlicher Tracker für Gym, Laufen, Ernährung und Gewicht (nur Max). Wochenfortschritt als 4 Ringe,
 Ziel-Check pro Tag/Woche, Sätze pro Muskelgruppe, versionierte Coach-Ziele und PDF-Berichte für den Coach.
@@ -63,7 +63,7 @@ tools/serve.mjs           lokaler Server ohne Abhängigkeiten
 ## Online-Betrieb
 
 - **Hosting:** Netlify, publish = `src`, kein Build (`netlify.toml`, inkl. strenger Content-Security-Policy).
-  Domain `sports.mxreinert.de` per CNAME bei IONOS.
+  Domain `mxsports.mxreinert.de` per CNAME bei IONOS.
 - **Datenbank:** Supabase, eine Tabelle pro Store (`k` = Schlüssel, `data` = Datensatz als JSON). RLS: nur eigene Zeilen
   und nur mit 2FA (aal2). Sign-ups aus, Konto wird im Supabase-Dashboard angelegt.
 - **Sync:** Netlify Functions `integrations` (Hevy-Key, Strava-OAuth) und `sync` (in Etappen). Zugriff nur mit Login + 2FA;
