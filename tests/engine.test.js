@@ -287,3 +287,36 @@ test('e1RM nach Epley', () => {
   assert.equal(e1rm(100, 5), 116.7);
   assert.equal(e1rm(100, 15), null);
 });
+
+test('Adduktoren, Abduktoren, Unterarme kommen von Hevy; Gruppen ohne Ziel zählen, werden aber nicht bewertet', async () => {
+  const { MUSCLES } = await import('../src/js/config.js');
+  const templates = {
+    add: { id: 'add', primary: 'adductors', secondary: [] },
+    abd: { id: 'abd', primary: 'abductors', secondary: [] },
+    curl: { id: 'curl', primary: 'biceps', secondary: ['forearms'] },
+  };
+  const w = fromHevyWorkout({ id: 'x', start_time: '2026-10-13T16:00:00Z', end_time: '2026-10-13T17:00:00Z', exercises: [
+    { exercise_template_id: 'add', title: 'Adduktoren-Maschine', sets: [{ type: 'normal' }, { type: 'normal' }] },
+    { exercise_template_id: 'abd', title: 'Abduktoren-Maschine', sets: [{ type: 'normal' }] },
+    { exercise_template_id: 'curl', title: 'Curl', sets: [{ type: 'normal' }, { type: 'normal' }] },
+  ] });
+  const s = snap({ workouts: [w], templates });
+  const ev = evaluateWeek(s, WEEK, '2026-11-01');
+  assert.equal(ev.muscles.sets.adductors, 2);
+  assert.equal(ev.muscles.sets.abductors, 1);
+  assert.equal(ev.muscles.sets.forearms, 1);
+  assert.equal(ev.muscles.unmapped.length, 0);
+  const c = weekChecks(ev);
+  assert.ok(c.muscles.some(m => m.key === 'adductors'), 'Adduktoren haben ein Ziel');
+  assert.ok(!c.muscles.some(m => m.key === 'forearms'), 'Unterarme ohne Ziel → nicht bewertet');
+  assert.equal(c.muscles.length, MUSCLES.filter(m => DEFAULTS.muscles.targets[m.id]).length);
+});
+
+test('Archiv: ausgeblendet, bis die Übung wieder trainiert wird', async () => {
+  const { isArchived } = await import('../src/js/lib/training.js');
+  assert.equal(isArchived(undefined, '2026-01-01'), false);
+  assert.equal(isArchived({ archived_at: '2026-10-17' }, '2025-12-01'), true);
+  assert.equal(isArchived({ archived_at: '2026-10-17' }, null), true);
+  assert.equal(isArchived({ archived_at: '2026-10-17' }, '2026-10-20'), false, 'wieder trainiert → aktiv');
+  assert.equal(isArchived({ archived_at: null }, '2025-01-01'), false, 'wiederhergestellt');
+});

@@ -64,6 +64,12 @@ export function muscleSets(workouts, lookup, rules = {}) {
   return { sets, unmapped: [...unmapped.values()] };
 }
 
+/**
+ * Archivierte Übung? Archiviert = ausgeblendet in der Übungs-Zuordnung. Wird die Übung nach dem Archivieren
+ * wieder trainiert (lastUsed nach archived_at), ist sie automatisch wieder aktiv.
+ */
+export const isArchived = (mapping, lastUsed) => !!mapping?.archived_at && !(lastUsed && lastUsed > mapping.archived_at);
+
 /** Zustand einer Muskelgruppe gegen die Zielspanne */
 export function rangeState(value, [min, max], { open = false } = {}) {
   if (value > max) return 'near';

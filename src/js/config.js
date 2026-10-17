@@ -32,8 +32,12 @@ export const MUSCLES = [
   { id: 'quads', label: 'Quadrizeps' },
   { id: 'hamstrings', label: 'Beinbeuger' },
   { id: 'glutes', label: 'Gesäß' },
+  { id: 'adductors', label: 'Adduktoren' },
+  { id: 'abductors', label: 'Abduktoren' },
   { id: 'calves', label: 'Waden' },
   { id: 'abs', label: 'Bauch' },
+  { id: 'forearms', label: 'Unterarme' },
+  { id: 'neck', label: 'Nacken' },
 ];
 export const MUSCLE_LABEL = Object.fromEntries(MUSCLES.map(m => [m.id, m.label]));
 
@@ -49,9 +53,9 @@ export const HEVY_GROUP_LABEL = Object.fromEntries(HEVY_GROUPS);
 
 /** Hevy-Gruppe → App-Gruppe (null = zählt nicht). In den Einstellungen änderbar. */
 export const DEFAULT_GROUP_MAP = {
-  abdominals: 'abs', abductors: 'glutes', adductors: null, biceps: 'biceps', calves: 'calves', cardio: null,
-  chest: 'chest', forearms: null, full_body: null, glutes: 'glutes', hamstrings: 'hamstrings', lats: 'lats',
-  lower_back: 'lower_back', neck: null, other: null, quadriceps: 'quads', shoulders: 'shoulders', traps: 'upper_back',
+  abdominals: 'abs', abductors: 'abductors', adductors: 'adductors', biceps: 'biceps', calves: 'calves', cardio: null,
+  chest: 'chest', forearms: 'forearms', full_body: null, glutes: 'glutes', hamstrings: 'hamstrings', lats: 'lats',
+  lower_back: 'lower_back', neck: 'neck', other: null, quadriceps: 'quads', shoulders: 'shoulders', traps: 'upper_back',
   triceps: 'triceps', upper_back: 'upper_back',
 };
 
@@ -88,7 +92,9 @@ export const DEFAULTS = {
     targets: {
       chest: [10, 16], lats: [8, 12], upper_back: [8, 12], lower_back: [3, 8], shoulders: [8, 14], rear_delts: [6, 10],
       biceps: [8, 14], triceps: [8, 14],
-      quads: [10, 16], hamstrings: [8, 12], glutes: [8, 14], calves: [6, 12], abs: [6, 10],
+      quads: [10, 16], hamstrings: [8, 12], glutes: [8, 14], adductors: [4, 8], abductors: [4, 8], calves: [6, 12], abs: [6, 10],
+      // ohne Ziel: wird gezählt und angezeigt, aber nicht bewertet
+      forearms: null, neck: null,
     },
     secondary_factor: 0.5,
     primary_only: false,

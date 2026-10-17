@@ -12,6 +12,7 @@ import { addDays, diffDays, weekDays, today } from '../lib/dates.js';
 import { dateDM, dateFull, dateShort, duration, num, fixed, signed, pace, kw, weekRange, wdShort } from '../lib/format.js';
 import { MUSCLES, PHASE, RINGS, EXCEPTION_REASONS } from '../config.js';
 import { phaseAt } from '../lib/phases.js';
+import { muscleRows } from './common.js';
 
 const CHART_W = 660;
 const phaseLabel = id => PHASE[id]?.label || id;
@@ -117,7 +118,7 @@ export function weekReport(snap, ws, { extraNote } = {}) {
         kv('Arbeitssätze', num(ev.rings.gym.items.reduce((s, i) => s + i.sets, 0))),
         kv('Ø Dauer', ev.workouts.length ? duration(ev.workouts.reduce((s, w) => s + w.duration_min, 0) / ev.workouts.length) : '–')),
       h('h3.doc-h3', 'Sätze pro Muskelgruppe vs. Zielspanne'),
-      rangeBars(wc.muscles.map(m => ({ key: m.key, label: m.label, value: m.actual, min: m.min, max: m.max, state: m.state }))),
+      rangeBars(muscleRows(ev, wc)),
       tops.length ? [h('h3.doc-h3', 'Top-Sätze der Hauptübungen'), table(['Übung', 'Bester Satz', 'e1RM', 'Tag'], tops.map(t => [snap.templates[t.template_id]?.title || t.title, `${num(t.weight_kg, 2)} kg × ${t.reps}`, `${num(t.e1rm, 1)} kg`, dateShort(t.date)]))] : null,
       table(['Workout', 'Tag', 'Dauer', 'Sätze', 'Zählt'], ev.rings.gym.items.map(i => [i.workout.title, dateShort(i.workout.date), duration(i.workout.duration_min), String(i.sets), i.counted ? 'ja' : `nein (${i.reasons.join(', ')})`]))),
 

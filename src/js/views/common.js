@@ -3,7 +3,7 @@ import { h } from '../ui/h.js';
 import { icon } from '../ui/icons.js';
 import { stateDot, iconBtn } from '../ui/kit.js';
 import { activityRings } from '../ui/rings.js';
-import { RINGS, PHASE } from '../config.js';
+import { RINGS, PHASE, MUSCLES } from '../config.js';
 import { num, kw, weekRange, wdShort, dateShort } from '../lib/format.js';
 import { parse } from '../lib/dates.js';
 import { phaseStatus } from '../lib/phases.js';
@@ -103,6 +103,15 @@ export function phaseCard(snap, now, { onClick } = {}) {
       h('span.muted', sub)),
     st.progress != null ? h('div.phase-progress', h('span', { style: { width: `${st.progress * 100}%` } })) : null,
     st.next ? h('div.phase-next', `Danach: ${PHASE[st.next.phase].label} ab ${dateShort(st.next.start)}`) : null);
+}
+
+/** Balken-Zeilen „Sätze pro Muskelgruppe“: alle Gruppen mit Ziel, dazu trainierte Gruppen ohne Ziel */
+export function muscleRows(ev, wc) {
+  const rows = wc.muscles.map(m => ({ key: m.key, label: m.label, value: m.actual, min: m.min, max: m.max, state: m.state }));
+  for (const m of MUSCLES) {
+    if (!ev.muscles.targets[m.id] && ev.muscles.sets[m.id] > 0) rows.push({ key: m.id, label: m.label, value: ev.muscles.sets[m.id], min: null, max: null, state: 'off' });
+  }
+  return rows;
 }
 
 export function pill(text, kind) {

@@ -8,6 +8,7 @@ import { fromHevyWorkout, fromHevyTemplate, fromStravaActivity } from '../../src
 
 const BUDGET_MS = 7000;
 const DAY = 86400;
+const OVERLAP_DAYS = 30;
 
 export default handle(async req => {
   if (req.method !== 'POST') throw new HttpError(405, 'Methode nicht erlaubt.');
@@ -21,7 +22,7 @@ export default handle(async req => {
   const counts = { runs: 0, workouts: 0, deleted: 0, templates: 0, ...body.counts };
   const pause = () => json({ done: false, cursor: c, counts });
 
-  // 1) Strava: Läufe seit dem letzten Sync (3 Tage Überlappung für nachträglich hochgeladene Aktivitäten)
+  // 1) Strava: Läufe ab 30 Tage vor dem letzten Sync – dort werden auch Änderungen, Löschungen und Typ-Wechsel übernommen
   if (c.step === 'strava') {
     if (integ.strava) await syncStrava(db, integ.strava, counts);
     Object.assign(c, { step: 'hevy', page: 1 });
@@ -90,13 +91,23 @@ async function syncStrava(db, row, counts) {
     access = decrypt(row.access_enc);
   }
   const now = Math.floor(Date.now() / 1000);
-  const after = row.last_sync ? Math.floor(Date.parse(row.last_sync) / 1000) - 3 * DAY : now - 365 * DAY;
+  const after = row.last_sync ? Math.floor(Date.parse(row.last_sync) / 1000) - OVERLAP_DAYS * DAY : now - 365 * DAY;
+  const seen = new Set();
+  let complete = false;
   for (let page = 1; page <= 20; page++) {
     const list = await strava.activities(access, after, page);
     const runs = list.map(fromStravaActivity).filter(Boolean);
     await db.upsert('runs', 'id', runs);
+    for (const r of runs) seen.add(r.id);
     counts.runs += runs.length;
-    if (list.length < 100) break;
+    if (list.length < 100) { complete = true; break; }
+  }
+  // Nur wenn der ganze Zeitraum geladen ist: Strava-Läufe im Zeitraum, die es dort nicht (mehr) als Lauf gibt, entfernen.
+  // Manuell eingetragene Läufe sind nie betroffen.
+  if (complete) {
+    const stale = (await db.keysWhere('runs', `k=like.strava-*&data->>start=gte.${new Date(after * 1000).toISOString()}`)).filter(k => !seen.has(k));
+    if (stale.length) await db.remove('runs', stale);
+    counts.deleted += stale.length;
   }
   await db.upsert('integrations', 'k', [{ ...row, last_sync: syncStart }]);
 }

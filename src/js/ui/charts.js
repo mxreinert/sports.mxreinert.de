@@ -121,18 +121,18 @@ export function lineChart({ series, labels, height = 180, width, onScrub, light 
 
 /**
  * Ist vs. Zielspanne als waagerechte Balken (Sätze pro Muskelgruppe).
- * rows: [{ label, value, min, max, state }]
+ * rows: [{ label, value, min, max, state }] – min/max null = ohne Ziel (nur Anzeige)
  */
 export function rangeBars(rows, { compare } = {}) {
-  const top = Math.max(...rows.map(r => Math.max(r.max * 1.2, r.value, compare?.[r.key] ?? 0)), 1);
+  const top = Math.max(...rows.map(r => Math.max((r.max ?? 0) * 1.2, r.value, compare?.[r.key] ?? 0)), 1);
   const pct = v => `${Math.min(100, (v / top) * 100)}%`;
   return h('div.rbars', rows.map(r => h('div.rbar',
     h('div.rbar-label', r.label),
     h('div.rbar-track',
-      h('span.rbar-band', { style: { left: pct(r.min), width: `calc(${pct(r.max)} - ${pct(r.min)})` } }),
+      r.min != null ? h('span.rbar-band', { style: { left: pct(r.min), width: `calc(${pct(r.max)} - ${pct(r.min)})` } }) : null,
       compare && compare[r.key] != null ? h('span.rbar-prev', { style: { width: pct(compare[r.key]) }, title: `Vorwoche: ${num(compare[r.key], 1)}` }) : null,
       h(`span.rbar-fill.st-${r.state}`, { style: { width: pct(r.value) } })),
-    h(`div.rbar-val.st-${r.state}`, num(r.value, 1), h('span.rbar-target', ` / ${r.min}–${r.max}`)))));
+    h(`div.rbar-val.st-${r.state}`, num(r.value, 1), h('span.rbar-target', r.min != null ? ` / ${r.min}–${r.max}` : ' · ohne Ziel')))));
 }
 
 /** Kleine Säulen (z. B. Schlaf 1–5 über 7 Tage) */

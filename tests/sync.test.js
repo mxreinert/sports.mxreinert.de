@@ -45,7 +45,12 @@ globalThis.fetch = async (url, init = {}) => {
     const inList = u.searchParams.get('k')?.match(/^in\.\((.*)\)$/)?.[1].split(',').map(s => s.replace(/"/g, ''));
     if (init.method === 'POST') { for (const r of JSON.parse(init.body)) t.set(r.k, r.data); return reply(null, 201); }
     if (init.method === 'DELETE') { for (const k of inList) t.delete(k); return reply(null, 204); }
-    const rows = [...t.entries()].filter(([k]) => !inList || inList.includes(k)).map(([k, data]) => ({ k, data }));
+    const like = u.searchParams.get('k')?.match(/^like\.(.*)\*$/)?.[1];
+    const startGte = u.searchParams.get('data->>start')?.replace(/^gte\./, '');
+    const rows = [...t.entries()]
+      .filter(([k]) => (!inList || inList.includes(k)) && (!like || k.startsWith(like)))
+      .filter(([, d]) => !startGte || (d.start || '') >= startGte)
+      .map(([k, data]) => ({ k, data }));
     return reply(rows);
   }
   if (u.host === 'api.hevyapp.com') {
@@ -140,6 +145,33 @@ test('Sync in Etappen: Strava-Läufe, Hevy-Workouts inkl. Löschung, Übungsvorl
   res = await (await req(sync, {})).json();
   assert.ok(res.done);
   assert.ok(!calls.some(c => c.includes('exercise_templates')));
+});
+
+test('Strava: 30 Tage Überlappung – Änderungen übernommen, gelöschte/umgewandelte Läufe entfernt, Rest bleibt', async () => {
+  const lastSync = new Date(Date.now() - 2 * 86400e3).toISOString();
+  table('integrations').set('strava', { k: 'strava', refresh_enc: encrypt('r'), access_enc: encrypt('a'), expires_at: Math.floor(Date.now() / 1000) + 3600, last_sync: lastSync, connected_at: 'x' });
+  const recent = new Date(Date.now() - 3 * 86400e3).toISOString();
+  const old = new Date(Date.now() - 60 * 86400e3).toISOString();
+  table('runs').set('strava-1', { id: 'strava-1', start: '2026-10-12T06:00:00Z', distance_km: 3 });   // wird aktualisiert
+  table('runs').set('strava-99', { id: 'strava-99', start: recent, distance_km: 5 });                // in Strava gelöscht/zu Rad geändert
+  table('runs').set('strava-50', { id: 'strava-50', start: old, distance_km: 8 });                   // außerhalb des Zeitraums
+  table('runs').set('manual-1', { id: 'manual-1', source: 'manual', start: recent });                // manuell
+  let afterParam;
+  const orig = globalThis.fetch;
+  globalThis.fetch = (url, init) => {
+    if (String(url).includes('/athlete/activities')) afterParam = Number(new URL(url).searchParams.get('after'));
+    return orig(url, init);
+  };
+  try {
+    const res = await (await req(sync, {})).json();
+    assert.ok(res.done);
+  } finally { globalThis.fetch = orig; }
+  const expectedAfter = Math.floor(Date.parse(lastSync) / 1000) - 30 * 86400;
+  assert.equal(afterParam, expectedAfter, '30 Tage vor dem letzten Sync');
+  assert.equal(table('runs').get('strava-1').distance_km, 5, 'Änderung übernommen');
+  assert.ok(!table('runs').has('strava-99'), 'gelöschter Lauf entfernt');
+  assert.ok(table('runs').has('strava-50'), 'ältere Läufe bleiben');
+  assert.ok(table('runs').has('manual-1'), 'manuelle Läufe bleiben');
 });
 
 test('Sync ohne Verbindungen ist sofort fertig', async () => {

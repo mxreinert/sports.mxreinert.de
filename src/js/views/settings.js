@@ -9,10 +9,10 @@ import {
 import * as db from '../store/db.js';
 import { loadDemo } from '../store/demo.js';
 import { coachAt, ringsAt, musclesAt, lookupOf, weekOf } from '../lib/engine.js';
-import { musclesOf } from '../lib/training.js';
+import { musclesOf, isArchived } from '../lib/training.js';
 import { sortVersions } from '../lib/versions.js';
 import { dateFull, num, kw, weekRange, slug } from '../lib/format.js';
-import { today } from '../lib/dates.js';
+import { today, addDays } from '../lib/dates.js';
 import {
   APP, BASE_DATE, PHASE, MUSCLES, MUSCLE_LABEL, HEVY_GROUPS, HEVY_GROUP_LABEL, DEFAULT_GROUP_MAP, WEEKDAYS, RINGS, EXCEPTION_REASONS,
 } from '../config.js';
@@ -35,7 +35,7 @@ export function renderSettings(root, ctx) {
 
   const { snap, now, go } = ctx;
   const c = coachAt(snap, now);
-  const missing = exerciseList(snap).filter(e => e.m.source === 'fehlt').length;
+  const missing = exerciseList(snap).filter(e => !e.archived && e.m.source === 'fehlt').length;
   root.append(largeTitle('Einstellungen'));
   const ps = phaseStatus(snap.phases, now);
   root.append(group([
@@ -246,22 +246,25 @@ function volumen(root, { snap, now, go }) {
     h('div.vol-grid',
       h('div.vol-head', h('span', 'Muskel'), h('span', 'Min'), h('span', 'Max')),
       MUSCLES.map(mu => {
-        const [mn, mx] = m.targets[mu.id] || [0, 0];
-        const a = numField({ value: mn, min: 0, max: 60, label: `${mu.label} min` });
-        const b = numField({ value: mx, min: 0, max: 60, label: `${mu.label} max` });
+        const [mn, mx] = m.targets[mu.id] || [null, null];
+        const a = numField({ value: mn, min: 0, max: 60, label: `${mu.label} min`, placeholder: '–' });
+        const b = numField({ value: mx, min: 0, max: 60, label: `${mu.label} max`, placeholder: '–' });
         fields.push([mu.id, a, b]);
         return h('div.vol-row', h('span.vol-name', mu.label), a.el, b.el);
       }))));
   let mode = m.primary_only ? 'primary' : 'half';
   root.append(card(cardHead('Zählregeln'),
     h('div.field', h('span.field-label', 'Sekundärmuskel'), seg([['half', '½ Satz'], ['primary', 'Nur Primärmuskel']], mode, v => { mode = v; })),
-    h('p.footnote', 'Aufwärmsätze zählen nie. Arbeitssätze = normal, failure, dropset (so markiert Hevy die Satztypen).')));
+    h('p.footnote', 'Min/Max leer lassen = ohne Ziel: Die Gruppe wird gezählt und angezeigt, aber nicht bewertet. Aufwärmsätze zählen nie. Arbeitssätze = normal, failure, dropset (so markiert Hevy die Satztypen).')));
   const validFrom = dateField({ label: 'Gültig ab', value: now });
   root.append(card(h('div.form', validFrom.el, btn('Als neue Version speichern', { cls: 'full', onClick: async () => {
     const targets = {};
     for (const [id, a, b] of fields) {
       if (!a.validate() || !b.validate()) { toast('Bitte Werte prüfen', { kind: 'error' }); return; }
-      const lo = a.get() ?? 0, hi = b.get() ?? 0;
+      const lo = a.get(), hi = b.get();
+      // beide leer = ohne Ziel (wird nur gezählt)
+      if (lo == null && hi == null) { targets[id] = null; continue; }
+      if (lo == null || hi == null) { toast(`${MUSCLE_LABEL[id]}: Min und Max ausfüllen – oder beide leer lassen (ohne Ziel)`, { kind: 'error' }); return; }
       if (hi < lo) { toast(`${MUSCLE_LABEL[id]}: Max muss ≥ Min sein`, { kind: 'error' }); return; }
       targets[id] = [lo, hi];
     }
@@ -285,26 +288,42 @@ function exerciseList(snap) {
     used.set(e.template_id, u);
   }
   for (const m of Object.values(snap.mappings)) if (!used.has(m.template_id)) used.set(m.template_id, { id: m.template_id, title: m.title || snap.templates[m.template_id]?.title || m.template_id, count: 0 });
-  return [...used.values()].map(u => ({ ...u, title: snap.templates[u.id]?.title || u.title, m: musclesOf(u.id, lookup), map: snap.mappings[u.id], tpl: snap.templates[u.id] }))
+  return [...used.values()].map(u => ({ ...u, title: snap.templates[u.id]?.title || u.title, m: musclesOf(u.id, lookup), map: snap.mappings[u.id], tpl: snap.templates[u.id], archived: isArchived(snap.mappings[u.id], u.last) }))
     .sort((a, b) => (b.m.source === 'fehlt') - (a.m.source === 'fehlt') || a.title.localeCompare(b.title));
 }
 
-function uebungen(root, { snap, go, rerender }) {
+function uebungen(root, { snap, now, go, rerender }) {
   root.append(largeTitle('Übungs-Zuordnung', { left: back(go), sub: 'Eigene Zuordnung hat Vorrang vor Hevy' }));
   const all = exerciseList(snap);
-  const filters = [['all', 'Alle'], ['fehlt', `Fehlt (${all.filter(e => e.m.source === 'fehlt').length})`], ['manuell', 'Manuell'], ['main', 'Haupt']];
-  root.append(h('div.sticky-seg', seg(filters, uState.filter, v => { uState.filter = v; rerender(); }, { small: true })));
-  const list = all.filter(e => uState.filter === 'all' || (uState.filter === 'main' ? e.map?.main : e.m.source === uState.filter));
   if (!all.length) { root.append(card(empty('dumbbell', 'Noch keine Übungen', 'Sobald Workouts von Hevy da sind, erscheinen hier alle Übungen.'))); return; }
-  root.append(group(list.map(e => row({
+  const active = all.filter(e => !e.archived);
+  const archived = all.filter(e => e.archived);
+  const filters = [['all', 'Aktiv'], ['fehlt', `Fehlt (${active.filter(e => e.m.source === 'fehlt').length})`], ['manuell', 'Manuell'], ['main', 'Haupt'], ['archiv', `Archiv (${archived.length})`]];
+  root.append(h('div.sticky-seg', seg(filters, uState.filter, v => { uState.filter = v; rerender(); }, { small: true })));
+
+  // Sammel-Archiv: lange nicht gemachte Übungen ausblenden
+  const old = active.filter(e => !e.last || e.last < addDays(now, -180));
+  if (old.length && uState.filter !== 'archiv') {
+    root.append(h('button.note', { type: 'button', onClick: async () => {
+      if (!(await confirmSheet(`${old.length} Übung(en), die du seit über 6 Monaten nicht gemacht hast, archivieren? Sie werden nur ausgeblendet und tauchen automatisch wieder auf, sobald du sie trainierst.`, { title: 'Alte Übungen archivieren', ok: 'Archivieren' }))) return;
+      for (const e of old) await db.saveMapping({ template_id: e.id, title: e.title, archived_at: now });
+      toast(`${old.length} Übung(en) archiviert`);
+    } }, icon('layers', 17), h('div', `${old.length} Übung(en) seit über 6 Monaten nicht gemacht – archivieren`), icon('chevR', 16)));
+  }
+
+  const list = uState.filter === 'archiv' ? archived
+    : active.filter(e => uState.filter === 'all' || (uState.filter === 'main' ? e.map?.main : e.m.source === uState.filter));
+  root.append(group(list.length ? list.map(e => row({
     title: h('span', e.title, e.map?.main ? h('span.star', icon('sparkle', 13)) : null),
-    sub: e.m.primary ? `${MUSCLE_LABEL[e.m.primary]}${e.m.secondary.length ? ` · ${e.m.secondary.map(g => MUSCLE_LABEL[g]).join(', ')} (½)` : ''}` : 'keine Muskelgruppe – zählt nicht fürs Volumen',
-    value: h(`span.src.src-${e.m.source}`, e.m.source === 'hevy' ? 'Hevy' : e.m.source === 'manuell' ? 'Manuell' : 'Fehlt'),
-    chevron: true, onClick: () => editExercise(snap, e),
-  })), { footer: '★ = Hauptübung (für Top-Sätze und 1RM-Verlauf in Berichten).' }));
+    sub: [e.m.primary ? `${MUSCLE_LABEL[e.m.primary]}${e.m.secondary.length ? ` · ${e.m.secondary.map(g => MUSCLE_LABEL[g]).join(', ')} (½)` : ''}` : 'keine Muskelgruppe – zählt nicht fürs Volumen',
+      e.last ? `zuletzt ${dateFull(e.last)}` : 'nie trainiert'].join(' · '),
+    value: e.archived ? h('span.src', 'Archiv') : h(`span.src.src-${e.m.source}`, e.m.source === 'hevy' ? 'Hevy' : e.m.source === 'manuell' ? 'Manuell' : 'Fehlt'),
+    chevron: true, onClick: () => editExercise(snap, e, now),
+  })) : [row({ title: h('span.muted', uState.filter === 'archiv' ? 'Keine archivierten Übungen' : 'Keine Übungen in dieser Ansicht') })],
+  { footer: uState.filter === 'archiv' ? 'Machst du eine archivierte Übung wieder, ist sie automatisch wieder aktiv.' : '★ = Hauptübung (für Top-Sätze und 1RM-Verlauf in Berichten).' }));
 }
 
-function editExercise(snap, e) {
+function editExercise(snap, e, now) {
   const hevyM = musclesOf(e.id, { ...lookupOf(snap), mappings: {} });
   let primary = e.map?.primary || e.m.primary || '';
   const secondary = new Set(e.map?.primary ? e.map.secondary || [] : e.m.secondary);
@@ -324,8 +343,12 @@ function editExercise(snap, e) {
       h('div.toggle-row', h('div', h('b', 'Hauptübung'), h('div.muted', 'Top-Sätze & 1RM-Verlauf')), toggle(main, v => { main = v; })),
       hevyM.primary ? h('p.footnote', `Hevy-Zuordnung: ${MUSCLE_LABEL[hevyM.primary]}${hevyM.secondary.length ? ` · ${hevyM.secondary.map(g => MUSCLE_LABEL[g]).join(', ')}` : ''}`) : null),
     footer: h('div.btn-row',
+      btn(e.archived ? 'Wiederherstellen' : 'Archivieren', { kind: 'gray', onClick: async () => {
+        await db.saveMapping({ template_id: e.id, title: e.title, archived_at: e.archived ? null : now });
+        s.close(); toast(e.archived ? 'Wiederhergestellt' : 'Archiviert – taucht wieder auf, sobald du sie trainierst');
+      } }),
       e.map?.primary ? btn('Hevy verwenden', { kind: 'gray', onClick: async () => {
-        if (main) await db.saveMapping({ template_id: e.id, title: e.title, primary: null, secondary: [], main });
+        if (main || e.map?.archived_at) await db.saveMapping({ template_id: e.id, title: e.title, primary: null, secondary: [], main });
         else await db.deleteMapping(e.id);
         s.close(); toast('Zurück auf Hevy-Zuordnung');
       } }) : null,

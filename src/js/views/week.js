@@ -8,7 +8,7 @@ import { addDays, weekDays } from '../lib/dates.js';
 import { dateLong, dateMedium, duration, num, fixed, signed, pace, kw, weekRange } from '../lib/format.js';
 import { EXCEPTION_REASONS, RINGS } from '../config.js';
 import * as db from '../store/db.js';
-import { ringsBlock, checkList, scoreBar, weekNav, dayStrip, NUT_KIND, NUT_LABEL, pill, infoNote } from './common.js';
+import { ringsBlock, checkList, scoreBar, weekNav, dayStrip, muscleRows, NUT_KIND, NUT_LABEL, pill, infoNote } from './common.js';
 import { openCheckin, openWeight } from './checkin.js';
 import { openWorkout, openRun } from './training-sheets.js';
 
@@ -51,10 +51,9 @@ export function renderWeek(root, { snap, now, go, params }) {
   root.append(card(cardHead('Ziel-Check der Woche', { iconName: 'target' }), checkList(wc.items)));
 
   // Volumen
-  const muscleRows = wc.muscles.map(m => ({ key: m.key, label: m.label, value: m.actual, min: m.min, max: m.max, state: m.state }));
   root.append(card(
     cardHead('Sätze pro Muskelgruppe', { iconName: 'muscle', color: 'var(--gym)', sub: `${num(ev.tonnage)} kg Gesamtvolumen · grau = Vorwoche` }),
-    rangeBars(muscleRows, { compare: prev.muscles.sets }),
+    rangeBars(muscleRows(ev, wc), { compare: prev.muscles.sets }),
     h('div.rbar-legend', h('span', h('i.band'), 'Zielspanne'), h('span', h('i', { style: { background: 'var(--ok)' } }), 'im Ziel'), h('span', h('i', { style: { background: 'var(--near)' } }), 'viel Volumen'), h('span', h('i', { style: { background: 'var(--miss)' } }), 'zu wenig')),
     ev.muscles.unmapped.length ? h('button.note.note-warn', { type: 'button', onClick: () => go('#/einstellungen/uebungen') },
       icon('info', 17), h('div', `${ev.muscles.unmapped.length} Übung(en) ohne Muskelgruppe: ${ev.muscles.unmapped.map(u => u.title).join(', ')} – jetzt zuordnen`), icon('chevR', 16)) : null));

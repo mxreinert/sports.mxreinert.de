@@ -106,6 +106,10 @@ export function database({ id, token }) {
         if (rows.length < 1000) return out;
       }
     },
+    /** Schlüssel mit PostgREST-Filter, z. B. "k=like.strava-*&data->>start=gte.2026-10-01T00:00:00Z" */
+    async keysWhere(table, filter) {
+      return (await call(`${table}?select=k&${filter.split('&').map(p => p.replace(/=(.*)$/, (_, v) => `=${encodeURIComponent(v)}`)).join('&')}`)).map(r => r.k);
+    },
     async upsert(table, keyField, rows) {
       for (let i = 0; i < rows.length; i += 500) {
         const body = rows.slice(i, i + 500).map(r => ({ user_id: id, k: String(r[keyField]), data: r }));
