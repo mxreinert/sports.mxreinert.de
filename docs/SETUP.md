@@ -63,3 +63,25 @@ Reihenfolge einhalten. Alles läuft im Browser, keine CLI nötig. Dauer ca. 30 M
 - Jeder Push auf `main` = ein Netlify-Deploy (verbraucht Kontingent) → **selten und gebündelt pushen**, vorher abstimmen.
 - Lokal weiter entwickeln mit `npm start`. Mit `http://localhost:5600/?lokal` läuft die App im Testmodus ohne Login
   (Browser-Speicher), sonst gegen die echte Datenbank.
+
+## 6. Hevy & Strava (Sync)
+
+Reihenfolge: erst Datenbank + Netlify-Variablen, **dann** deployen (Netlify liest Variablen beim Deploy).
+
+1. **Supabase → SQL Editor:** `supabase/migrations/002_integrations.sql` ausführen (Tabelle für die verschlüsselten Zugänge).
+2. **Strava-App anlegen:** strava.com/settings/api
+   - Application Name `mx sports` · Category `Data Importer` · Website `https://sports.mxreinert.de`
+   - **Authorization Callback Domain:** `sports.mxreinert.de` (ohne https://)
+   - Danach **Client ID** und **Client Secret** notieren.
+3. **Netlify → Project configuration → Environment variables → Add a variable** (je eine):
+   - `SECRETS_ENCRYPTION_KEY` → Wert aus der Datei `.env.local` im Projektordner (nur lokal, nie im Repo)
+   - `STRAVA_CLIENT_ID` → Client ID
+   - `STRAVA_CLIENT_SECRET` → Client Secret (als „secret“ markieren)
+4. Deploy (Push auf `main` oder in Netlify *Deploys → Trigger deploy*).
+5. In der App: **Einstellungen → Hevy & Strava**
+   - Hevy: API-Key aus hevy.com/settings?developer einfügen → *Speichern & prüfen*
+   - Strava: *Mit Strava verbinden* → bei Strava bestätigen (Haken bei Aktivitäten lassen)
+   - *Jetzt synchronisieren* – der erste Hevy-Import kann je nach Menge ein paar Durchläufe dauern.
+
+Strava-Verbindung funktioniert nur unter `sports.mxreinert.de` (Callback-Domain), nicht unter `*.netlify.app`.
+Danach synchronisiert die App beim Öffnen automatisch (höchstens alle 30 Minuten).

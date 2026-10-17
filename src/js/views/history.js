@@ -54,7 +54,7 @@ function gewicht(root, { snap, now, rerender }) {
       h('div.stat', h('div.stat-label', 'Veränderung'), h('div.stat-val', firstAvg != null && lastAvg != null ? `${signed(lastAvg - firstAvg, 1)} kg` : '–'), h('div.stat-sub', `im Zeitraum (Ø)`)),
       h('div.stat', h('div.stat-label', 'pro Woche'), h('div.stat-val', firstAvg != null && lastAvg != null ? `${signed((lastAvg - firstAvg) / weeks, 2)} kg` : '–'), h('div.stat-sub', firstAvg && lastAvg ? `${signed(((lastAvg - firstAvg) / firstAvg / weeks) * 100, 2)} %` : null)),
       h('div.stat', h('div.stat-label', 'Wiegungen'), h('div.stat-val', String(vals.length)), h('div.stat-sub', `von ${state.range} Tagen`))),
-    h('p.footnote', 'Reine Info für die Coachin – der Wiege-Ring bewertet nur, ob du einträgst, nicht was die Waage zeigt.')));
+    h('p.footnote', 'Reine Info für den Coach – der Wiege-Ring bewertet nur, ob du einträgst, nicht was die Waage zeigt.')));
 
   const ws = lastWeeks(snap, now, 8).reverse();
   root.append(group(ws.map((w, i) => {

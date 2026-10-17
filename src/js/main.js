@@ -12,6 +12,7 @@ import { renderReports } from './views/reports.js';
 import { renderSettings } from './views/settings.js';
 import { maybeOpenSetup } from './views/setup.js';
 import { ensureLogin } from './views/login.js';
+import { api, autoSync } from './views/sync.js';
 
 const ROUTES = { heute: renderToday, woche: renderWeek, verlauf: renderHistory, berichte: renderReports, einstellungen: renderSettings };
 const TABS = [
@@ -101,9 +102,29 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && today() !== day) { day = today(); render({ keepScroll: true }); } });
   if (!location.hash) history.replaceState(null, '', '#/heute');
   render();
+  if (cloud.enabled) {
+    await finishStravaConnect();
+    autoSync();
+  }
 
   const local = ['localhost', '127.0.0.1'].includes(location.hostname) || /^(192\.168|10\.)/.test(location.hostname);
   if ('serviceWorker' in navigator && !local) navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+/** Rückkehr von Strava: /?strava=1&code=…&state=…&scope=… → Verbindung abschließen */
+async function finishStravaConnect() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('strava')) return;
+  history.replaceState(null, '', '/#/einstellungen/verbindungen');
+  render();
+  if (q.get('error') || !q.get('code')) { toast('Strava-Verbindung abgebrochen', { kind: 'error' }); return; }
+  try {
+    await api('integrations', { action: 'strava-finish', code: q.get('code'), state: q.get('state'), scope: q.get('scope') || '' });
+    toast('Strava verbunden');
+    render();
+  } catch (e) {
+    toast(e.message, { kind: 'error', ms: 4500 });
+  }
 }
 
 boot();

@@ -64,7 +64,7 @@ export const EXCEPTION_REASONS = [
 ];
 
 export const DEFAULTS = {
-  /** Coach-Ziele (versioniert). kcal/Protein kommen von der Coachin → anfangs leer. */
+  /** Coach-Ziele (versioniert). kcal/Protein kommen vom Coach → anfangs leer. */
   coach: {
     phase: 'maintenance',
     kcal: null, kcal_tol: 150, kcal_tol_yellow: 300,

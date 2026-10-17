@@ -19,6 +19,7 @@ import {
 import { openException } from './week.js';
 import { infoNote, phaseCard } from './common.js';
 import * as cloud from '../store/cloud.js';
+import { api, runSync } from './sync.js';
 import { openSetup } from './setup.js';
 import { phaseAt, phaseStatus } from '../lib/phases.js';
 
@@ -49,7 +50,7 @@ export function renderSettings(root, ctx) {
     row({ iconName: 'pause', color: '#8e8e93', title: 'Pausen-Wochen', sub: 'Deload, Krankheit, Urlaub', value: snap.exceptions.length ? String(snap.exceptions.length) : null, chevron: true, onClick: () => go('#/einstellungen/pausen') }),
   ], { header: 'Training' }));
   root.append(group([
-    row({ iconName: 'link', color: '#ff2d55', title: 'Hevy & Strava', sub: 'ab Phase 2 (online)', chevron: true, onClick: () => go('#/einstellungen/verbindungen') }),
+    row({ iconName: 'link', color: '#ff2d55', title: 'Hevy & Strava', sub: cloud.enabled ? 'Workouts & Läufe automatisch' : 'nur online', chevron: true, onClick: () => go('#/einstellungen/verbindungen') }),
     row({ iconName: 'database', color: '#0a84ff', title: 'Daten', sub: 'Export, Import, Demo-Daten, Löschen', chevron: true, onClick: () => go('#/einstellungen/daten') }),
   ], { header: 'Verbindungen & Daten' }));
   if (cloud.enabled) {
@@ -109,15 +110,15 @@ function editEnd(p) {
 function coach(root, { snap, now, go }) {
   const cur = coachAt(snap, now);
   const curV = sortVersions(snap.coach).find(v => v.valid_from <= now);
-  root.append(largeTitle('Coach-Ziele', { left: back(go), sub: 'Was die Coachin vorgibt' }));
+  root.append(largeTitle('Coach-Ziele', { left: back(go), sub: 'Was der Coach vorgibt' }));
   root.append(infoNote('Jede Änderung wird als neue Version mit „gültig ab“ gespeichert. Alte Wochen werden weiter mit den Zielen bewertet, die damals galten.', 'history'));
 
   let checkMacros = !!cur.check_macros;
   const F = {
-    kcal: numField({ label: 'kcal-Ziel', unit: 'kcal', value: cur.kcal, min: 800, max: 10000, placeholder: 'von Coachin' }),
+    kcal: numField({ label: 'kcal-Ziel', unit: 'kcal', value: cur.kcal, min: 800, max: 10000, placeholder: 'vom Coach' }),
     kcal_tol: numField({ label: 'Toleranz grün', unit: '± kcal', value: cur.kcal_tol, min: 0, max: 2000 }),
     kcal_tol_yellow: numField({ label: 'Toleranz gelb', unit: '± kcal', value: cur.kcal_tol_yellow, min: 0, max: 3000 }),
-    protein: numField({ label: 'Protein', unit: 'g', value: cur.protein, min: 0, max: 600, placeholder: 'von Coachin' }),
+    protein: numField({ label: 'Protein', unit: 'g', value: cur.protein, min: 0, max: 600, placeholder: 'vom Coach' }),
     protein_tol_yellow: numField({ label: 'Protein gelb bis', unit: '− g', value: cur.protein_tol_yellow, min: 0, max: 200 }),
     carbs: numField({ label: 'Kohlenhydrate', unit: 'g', value: cur.carbs, min: 0, max: 1500 }),
     fat: numField({ label: 'Fett', unit: 'g', value: cur.fat, min: 0, max: 600 }),
@@ -131,7 +132,7 @@ function coach(root, { snap, now, go }) {
   const macroWrap = h('div.grid-2', F.macro_tol.el, F.macro_tol_yellow.el);
   macroWrap.hidden = !checkMacros;
   const validFrom = dateField({ label: 'Gültig ab', value: now });
-  const note = textField({ label: 'Notiz', placeholder: 'z. B. „Von Coachin am 15.10. besprochen: +150 kcal“', multiline: true, rows: 2 });
+  const note = textField({ label: 'Notiz', placeholder: 'z. B. „Vom Coach am 15.10. besprochen: +150 kcal“', multiline: true, rows: 2 });
 
   root.append(card(cardHead('Neue Version', { sub: curV ? `aktuell: ${validFromLabel(curV)}` : null }),
     h('div.form',
@@ -375,22 +376,75 @@ function pausen(root, { snap, now, go }) {
 
 // ---------- Verbindungen ----------
 
+const dt = iso => (iso ? new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : 'noch nie');
+
 function verbindungen(root, { go }) {
-  root.append(largeTitle('Hevy & Strava', { left: back(go) }));
-  const conn = (name, color, iconName, text, steps) => card(
-    cardHead(name, { iconName, color, right: h('span.chip.chip-muted', 'Phase 2') }),
-    h('p.muted', text), h('ol.steps', steps.map(s => h('li', s))));
-  root.append(conn('Hevy', '#5e5ce6', 'dumbbell', 'Workouts automatisch über die offizielle Hevy-API (Hevy Pro).', [
-    'API-Key unter hevy.com/settings?developer erstellen',
-    'Key als Umgebungsvariable HEVY_API_KEY in Netlify hinterlegen – nie im Repo',
-    'Netlify Function holt Workouts + Übungsvorlagen (täglich + beim Öffnen + per Button)',
-  ]));
-  root.append(conn('Strava', '#fc4c02', 'run', 'Läufe automatisch über die offizielle Strava-API (OAuth). Uhr → Strava → App.', [
-    'Strava-App unter strava.com/settings/api anlegen',
-    'STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET in Netlify hinterlegen',
-    'Einmal verbinden – Refresh-Token wird verschlüsselt in der Datenbank gespeichert',
-  ]));
-  root.append(infoNote('Im lokalen Testmodus laufen keine Netlify Functions. Workouts und Läufe in den Demo-Daten sind im echten Hevy-/Strava-Format erzeugt und laufen durch dieselben Import-Funktionen.'));
+  root.append(largeTitle('Hevy & Strava', { left: back(go), sub: 'Workouts und Läufe automatisch' }));
+  if (!cloud.enabled) {
+    root.append(infoNote('Nur online verfügbar (mit Login). Im lokalen Testmodus gibt es keine Server-Funktionen.'));
+    return;
+  }
+  const box = h('div.conn', h('p.muted.pad', 'Lade Status …'));
+  root.append(box);
+
+  const run = async (button, fn, ok) => {
+    button.disabled = true;
+    try { show(await fn()); if (ok) toast(ok); } catch (e) { toast(e.message, { kind: 'error', ms: 4500 }); } finally { button.disabled = false; }
+  };
+  const load = () => api('integrations').then(show).catch(e => box.replaceChildren(infoNote(e.message)));
+
+  function show(st) {
+    const parts = [];
+    if (!st.secrets_ready) parts.push(h('div.note.note-warn', icon('info', 17), h('div', 'In Netlify fehlt SECRETS_ENCRYPTION_KEY – ohne ihn können Hevy-Key und Strava-Zugang nicht sicher gespeichert werden.')));
+
+    // Hevy
+    const hevyCard = card(cardHead('Hevy', { iconName: 'dumbbell', color: '#5e5ce6', right: h(`span.chip${st.hevy.connected ? '.chip-ok' : '.chip-muted'}`, st.hevy.connected ? 'verbunden' : 'nicht verbunden') }));
+    if (st.hevy.connected) {
+      hevyCard.append(
+        h('p.muted', `Verbunden seit ${dt(st.hevy.connected_at)} · letzter Sync: ${dt(st.hevy.last_sync)}`),
+        h('div.btn-row', btn('Trennen', { kind: 'gray', onClick: async e => {
+          if (await confirmSheet('Hevy trennen? Bereits importierte Workouts bleiben erhalten.', { title: 'Hevy trennen', ok: 'Trennen', danger: true })) run(e.currentTarget, () => api('integrations', { action: 'hevy-remove' }), 'Hevy getrennt');
+        } })));
+    } else {
+      const key = textField({ label: 'Hevy API-Key', placeholder: 'aus hevy.com → Settings → Developer' });
+      Object.assign(key.input, { type: 'password', autocomplete: 'off' });
+      hevyCard.append(
+        h('p.muted', 'Braucht Hevy Pro. Key unter hevy.com/settings?developer erstellen und hier einfügen. Er wird geprüft und nur verschlüsselt auf dem Server gespeichert.'),
+        key.el,
+        btn('Speichern & prüfen', { cls: 'full', onClick: e => run(e.currentTarget, () => api('integrations', { action: 'hevy-save', key: key.get() }), 'Hevy verbunden – jetzt synchronisieren') }));
+    }
+    parts.push(hevyCard);
+
+    // Strava
+    const stravaCard = card(cardHead('Strava', { iconName: 'run', color: '#fc4c02', right: h(`span.chip${st.strava.connected ? '.chip-ok' : '.chip-muted'}`, st.strava.connected ? 'verbunden' : 'nicht verbunden') }));
+    if (!st.strava_ready) {
+      stravaCard.append(h('p.muted', 'Noch nicht eingerichtet: In Netlify fehlen STRAVA_CLIENT_ID und STRAVA_CLIENT_SECRET (Anleitung in docs/SETUP.md).'));
+    } else if (st.strava.connected) {
+      stravaCard.append(
+        h('p.muted', `${st.strava.athlete?.name ? `${st.strava.athlete.name} · ` : ''}verbunden seit ${dt(st.strava.connected_at)} · letzter Sync: ${dt(st.strava.last_sync)}`),
+        h('div.btn-row', btn('Trennen', { kind: 'gray', onClick: async e => {
+          if (await confirmSheet('Strava trennen? Bereits importierte Läufe bleiben erhalten.', { title: 'Strava trennen', ok: 'Trennen', danger: true })) run(e.currentTarget, () => api('integrations', { action: 'strava-remove' }), 'Strava getrennt');
+        } })));
+    } else {
+      stravaCard.append(
+        h('p.muted', 'Uhr → Strava → App. Du wirst zu Strava weitergeleitet und bestätigst den Zugriff auf deine Aktivitäten.'),
+        btn('Mit Strava verbinden', { cls: 'full btn-strava', onClick: async e => {
+          e.currentTarget.disabled = true;
+          try { location.href = (await api('integrations', { action: 'strava-start' })).url; } catch (err) { toast(err.message, { kind: 'error' }); e.currentTarget.disabled = false; }
+        } }));
+    }
+    parts.push(stravaCard);
+
+    if (st.hevy.connected || st.strava.connected) {
+      parts.push(h('div.center-action', btn('Jetzt synchronisieren', { kind: 'tinted', iconName: 'sync', onClick: async e => {
+        e.currentTarget.disabled = true;
+        await runSync();
+        load();
+      } })), h('p.footnote.center', 'Sync läuft automatisch beim Öffnen der App (höchstens alle 30 Minuten).'));
+    }
+    box.replaceChildren(...parts);
+  }
+  load();
 }
 
 // ---------- Daten ----------

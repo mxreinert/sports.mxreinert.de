@@ -23,7 +23,7 @@ export function renderToday(root, { snap, now, go }) {
     sub: dateLong(now),
     right: [
       streak > 0 ? h('span.streak', { title: `${streak} Tage in Folge eingetragen` }, icon('flame', 16), String(streak)) : null,
-      iconBtn('sync', { label: 'Jetzt synchronisieren', onClick: runSync }),
+      iconBtn('sync', { label: 'Jetzt synchronisieren', onClick: () => runSync(), cls: 'sync-btn' }),
     ],
   }));
 
@@ -35,6 +35,15 @@ export function renderToday(root, { snap, now, go }) {
     root.append(h('button.banner', { type: 'button', onClick: () => openCheckin(now) },
       h('span.banner-ic', icon('moon', 20)),
       h('div', h('b', 'Abend-Check-in fehlt noch'), h('div', streak ? `Halte deine Serie von ${streak} ${streak === 1 ? 'Tag' : 'Tagen'} am Leben.` : 'Dauert weniger als eine Minute.')),
+      icon('chevR', 18)));
+  }
+
+  // Gestern vergessen? (nur wenn es davor schon Einträge gibt, nicht am ersten Tag)
+  const yesterday = addDays(now, -1);
+  if (snap.logs[yesterday]?.kcal == null && Object.keys(snap.logs).some(d => d < yesterday)) {
+    root.append(h('button.banner.banner-soft', { type: 'button', onClick: () => openCheckin(yesterday) },
+      h('span.banner-ic', icon('history', 18)),
+      h('div', h('b', 'Gestern fehlt noch'), h('div', 'Jetzt nachtragen – ältere Tage im Check-in mit ‹ ›.')),
       icon('chevR', 18)));
   }
 

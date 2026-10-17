@@ -1,7 +1,7 @@
 # mx sports – sports.mxreinert.de
 
 Persönlicher Tracker für Gym, Laufen, Ernährung und Gewicht (nur Max). Wochenfortschritt als 4 Ringe,
-Ziel-Check pro Tag/Woche, Sätze pro Muskelgruppe, versionierte Coach-Ziele und PDF-Berichte für die Coachin.
+Ziel-Check pro Tag/Woche, Sätze pro Muskelgruppe, versionierte Coach-Ziele und PDF-Berichte für den Coach.
 Konzept: `docs/KONZEPT.md`.
 
 ## Starten (lokal)
@@ -66,4 +66,7 @@ tools/serve.mjs           lokaler Server ohne Abhängigkeiten
   Domain `sports.mxreinert.de` per CNAME bei IONOS.
 - **Datenbank:** Supabase, eine Tabelle pro Store (`k` = Schlüssel, `data` = Datensatz als JSON). RLS: nur eigene Zeilen
   und nur mit 2FA (aal2). Sign-ups aus, Konto wird im Supabase-Dashboard angelegt.
-- **Noch offen:** Hevy-/Strava-Sync (Netlify Functions, Keys nur als Netlify-Env), Push-Erinnerung um 21 Uhr, Offline-Schreiben.
+- **Sync:** Netlify Functions `integrations` (Hevy-Key, Strava-OAuth) und `sync` (in Etappen). Zugriff nur mit Login + 2FA;
+  die Functions schreiben mit dem Login des Nutzers (RLS), kein Service-Key. Hevy-Key / Strava-Token AES-256-GCM-verschlüsselt
+  in `integrations`. Netlify-Env: `SECRETS_ENCRYPTION_KEY`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`.
+- **Noch offen:** Push-Erinnerung um 21 Uhr, Offline-Schreiben, täglicher Sync ohne geöffnete App.

@@ -225,3 +225,9 @@ export async function bulk(rowsByStore) {
   await reload();
   emit();
 }
+
+/** Nach einem Server-Sync (Hevy/Strava) alles neu laden */
+export async function refresh() {
+  await reload();
+  emit();
+}

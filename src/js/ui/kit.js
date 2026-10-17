@@ -179,9 +179,12 @@ export function empty(iconName, title, text, action) {
 
 export function sheet({ title, body, footer, onClose, size } = {}) {
   const closeBtn = h('button.icon-btn.sheet-x', { type: 'button', 'aria-label': 'Schließen', onClick: () => close() }, icon('x', 18));
-  const head = h('div.sheet-head', h('div.sheet-grab'), h('div.sheet-titlebar', h('h2.sheet-title', title || ''), closeBtn));
+  const titleEl = h('h2.sheet-title', title || '');
+  const head = h('div.sheet-head', h('div.sheet-grab'), h('div.sheet-titlebar', titleEl, closeBtn));
   const bodyEl = h('div.sheet-body', body);
-  const panel = h(`div.sheet${size ? `.sheet-${size}` : ''}`, { role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, head, bodyEl, footer ? h('div.sheet-foot', footer) : null);
+  const footEl = h('div.sheet-foot', footer);
+  footEl.hidden = !footer;
+  const panel = h(`div.sheet${size ? `.sheet-${size}` : ''}`, { role: 'dialog', 'aria-modal': 'true', 'aria-label': title }, head, bodyEl, footEl);
   const root = h('div.sheet-root', h('div.sheet-backdrop', { onClick: () => close() }), panel);
   document.body.append(root);
   document.body.classList.add('no-scroll');
@@ -211,7 +214,15 @@ export function sheet({ title, body, footer, onClose, size } = {}) {
       onClose?.();
     }, 340);
   }
-  return { close };
+  /** Inhalt austauschen, ohne das Sheet zu schließen (z. B. anderer Tag) */
+  function update({ title: newTitle, body: newBody, footer: newFooter }) {
+    titleEl.textContent = newTitle;
+    bodyEl.replaceChildren(newBody);
+    footEl.replaceChildren(...[newFooter].filter(Boolean));
+    footEl.hidden = !newFooter;
+    bodyEl.scrollTop = 0;
+  }
+  return { close, update };
 }
 
 export function confirmSheet(text, { title = 'Sicher?', ok = 'Bestätigen', danger = false } = {}) {

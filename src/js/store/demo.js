@@ -72,9 +72,9 @@ export async function loadDemo({ weeks = 12 } = {}) {
   ];
   const coach = [
     { id: 'demo-cb', valid_from: BASE_DATE, created_at: created, ...DEFAULTS.coach, note: 'Startwerte' },
-    { id: 'demo-c0', valid_from: firstWeek, created_at: created, ...DEFAULTS.coach, phase: 'bulk', phase_id: 'demo-p0', kcal: 3000, protein: 170, carbs: 380, fat: 85, note: 'Startwerte von der Coachin' },
-    { id: 'demo-c1', valid_from: changeWeek, created_at: created, ...DEFAULTS.coach, phase: 'bulk', kcal: 3150, protein: 175, carbs: 400, fat: 85, note: 'Mit Coachin besprochen: +150 kcal, Gewicht steigt zu langsam' },
-    { id: 'demo-c2', valid_from: cutStart, created_at: created, ...DEFAULTS.coach, phase: 'cut', phase_id: 'demo-p1', kcal: 2500, protein: 190, carbs: 260, fat: 70, check_macros: true, gym_goal: 4, run_goal: 3, note: 'Cut-Makros von der Coachin' },
+    { id: 'demo-c0', valid_from: firstWeek, created_at: created, ...DEFAULTS.coach, phase: 'bulk', phase_id: 'demo-p0', kcal: 3000, protein: 170, carbs: 380, fat: 85, note: 'Startwerte vom Coach' },
+    { id: 'demo-c1', valid_from: changeWeek, created_at: created, ...DEFAULTS.coach, phase: 'bulk', kcal: 3150, protein: 175, carbs: 400, fat: 85, note: 'Mit Coach besprochen: +150 kcal, Gewicht steigt zu langsam' },
+    { id: 'demo-c2', valid_from: cutStart, created_at: created, ...DEFAULTS.coach, phase: 'cut', phase_id: 'demo-p1', kcal: 2500, protein: 190, carbs: 260, fat: 70, check_macros: true, gym_goal: 4, run_goal: 3, note: 'Cut-Makros vom Coach' },
   ];
   const rings = [{ id: 'demo-r0', valid_from: BASE_DATE, created_at: created, ...structuredClone(DEFAULTS.rings), note: 'Startwerte' }];
   const muscles = [{ id: 'demo-m0', valid_from: BASE_DATE, created_at: created, ...structuredClone(DEFAULTS.muscles), note: 'Startwerte' }];

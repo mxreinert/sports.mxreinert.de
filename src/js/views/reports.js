@@ -17,7 +17,7 @@ export function renderReports(root, { snap, now, rerender }) {
   const ws = state.ws;
   const noteKey = state.kind === 'woche' ? `week:${ws}` : `questions:${ws}`;
 
-  root.append(largeTitle('Berichte', { sub: 'Für die Coachin – als PDF' }));
+  root.append(largeTitle('Berichte', { sub: 'Für den Coach – als PDF' }));
   root.append(h('div.sticky-seg', seg([['woche', 'Wochenbericht'], ['zwei', 'Zweiwochenbericht']], state.kind, v => { state.kind = v; rerender(); })));
   root.append(weekNav(ws, {
     onPrev: () => { state.ws = addDays(ws, -7); rerender(); },
@@ -28,7 +28,7 @@ export function renderReports(root, { snap, now, rerender }) {
   if (state.kind === 'zwei') root.append(h('p.footnote.center', `Woche A = ${kw(addDays(ws, -7))}, Woche B = ${kw(ws)}`));
 
   const text = textField({
-    label: state.kind === 'woche' ? 'Anmerkung zur Woche (optional)' : 'Fragen an die Coachin',
+    label: state.kind === 'woche' ? 'Anmerkung zur Woche (optional)' : 'Fragen an den Coach',
     value: snap.notes[noteKey] || '', multiline: true, rows: 3,
     placeholder: state.kind === 'woche' ? 'Erscheint unter „Notizen der Woche“' : 'z. B. „Sollen wir die kcal an Trainingstagen erhöhen?“',
   });

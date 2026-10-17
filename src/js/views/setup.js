@@ -63,7 +63,7 @@ export function openSetup(mode = 'first') {
   };
   const startF = dateField({ label: 'Start', value: state.start, min: minStart || undefined });
   const endF = dateField({ label: 'Geplantes Ende', value: state.end });
-  const note = textField({ label: 'Notiz (optional)', placeholder: 'z. B. „Mit Coachin besprochen am 15.10.“' });
+  const note = textField({ label: 'Notiz (optional)', placeholder: 'z. B. „Mit Coach besprochen am 15.10.“' });
 
   const steps = [];
   if (mode === 'first') steps.push(welcomeStep);
@@ -172,7 +172,7 @@ export function openSetup(mode = 'first') {
   function nutritionStep() {
     const macroWrap = h('div.grid-2', F.carbs.el, F.fat.el);
     return {
-      content: [h('h2.setup-h', 'Ernährung'), h('p.setup-text.small', 'Werte von deiner Coachin. Toleranzen bestimmen, wann ein Tag grün oder gelb ist.'),
+      content: [h('h2.setup-h', 'Ernährung'), h('p.setup-text.small', 'Werte von deinem Coach. Toleranzen bestimmen, wann ein Tag grün oder gelb ist.'),
         F.kcal.el, h('div.grid-2', F.kcal_tol.el, F.kcal_tol_yellow.el), h('div.grid-2', F.protein.el, F.protein_tol_yellow.el),
         h('div.toggle-row', h('div', h('b', 'KH & Fett prüfen'), h('div.muted', 'Makros zählen für grüne Tage')), toggle(state.checkMacros, v => { state.checkMacros = v; })),
         macroWrap],

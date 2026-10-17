@@ -232,6 +232,6 @@ export function biweeklyReport(snap, wsB, { questions } = {}) {
         kv('Gym-Regel', `≥ ${r.gym.min_duration} min, ≥ ${r.gym.min_sets} Sätze`)),
       c.note ? h('p.doc-muted', `Notiz zur Version: ${c.note}`) : null),
 
-    sec(7, 'Fragen an die Coachin',
+    sec(7, 'Fragen an den Coach',
       questions ? h('div.doc-questions', questions) : h('div.doc-questions.doc-empty', 'Keine Fragen eingetragen.')));
 }

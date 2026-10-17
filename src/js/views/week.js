@@ -115,7 +115,7 @@ export function openException(ws, ex) {
   let reason = ex?.reason || 'deload';
   const rings = new Set(ex?.rings?.length ? ex.rings : RINGS.map(r => r.id));
   const factor = numField({ label: 'Ziele reduzieren auf', unit: '%', value: Math.round((ex?.factor ?? 0.5) * 100), min: 10, max: 90 });
-  const note = textField({ label: 'Notiz', value: ex?.note || '', placeholder: 'z. B. „Erkältung, Coachin informiert“' });
+  const note = textField({ label: 'Notiz', value: ex?.note || '', placeholder: 'z. B. „Erkältung, Coach informiert“' });
   const factorWrap = h('div', factor.el);
   const syncMode = () => { factorWrap.hidden = mode !== 'reduce'; };
   syncMode();
