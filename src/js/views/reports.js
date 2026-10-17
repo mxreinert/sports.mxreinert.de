@@ -12,8 +12,8 @@ const state = { kind: 'woche', ws: null };
 
 export function renderReports(root, { snap, now, rerender }) {
   const current = weekOf(snap, now);
-  // Standard: letzte abgeschlossene Woche
-  state.ws ||= addDays(current, -7);
+  // Standard: aktuelle Woche (Zwischenstand), ältere Wochen mit ‹
+  state.ws ||= current;
   const ws = state.ws;
   const noteKey = state.kind === 'woche' ? `week:${ws}` : `questions:${ws}`;
 
@@ -22,8 +22,8 @@ export function renderReports(root, { snap, now, rerender }) {
   root.append(weekNav(ws, {
     onPrev: () => { state.ws = addDays(ws, -7); rerender(); },
     onNext: () => { state.ws = addDays(ws, 7); rerender(); },
-    onToday: () => { state.ws = addDays(current, -7); rerender(); },
-    isCurrent: ws === addDays(current, -7),
+    onToday: () => { state.ws = current; rerender(); },
+    isCurrent: ws === current,
   }));
   if (state.kind === 'zwei') root.append(h('p.footnote.center', `Woche A = ${kw(addDays(ws, -7))}, Woche B = ${kw(ws)}`));
 

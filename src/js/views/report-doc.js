@@ -20,7 +20,7 @@ const phaseLabel = id => PHASE[id]?.label || id;
 /** „Bulk (Woche 3, bis 10.01.2027)“ – aus dem Phasenplan, sonst aus der Coach-Version */
 function phaseText(snap, date) {
   const p = phaseAt(snap.phases, date);
-  if (!p) return phaseLabel(coachAt(snap, date).phase);
+  if (!p) return 'keine Phase';
   const week = Math.floor(diffDays(p.start, date) / 7) + 1;
   return `${phaseLabel(p.phase)} (Woche ${week}${p.end ? `, bis ${dateFull(p.end)}` : ''})`;
 }
