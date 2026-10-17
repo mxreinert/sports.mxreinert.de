@@ -37,7 +37,8 @@ export async function level() {
 }
 
 export async function signIn(email, password) {
-  const { error } = await client().auth.signInWithPassword({ email, password });
+  // Handy-Tastaturen schreiben den ersten Buchstaben gern groß – E-Mails immer klein vergleichen
+  const { error } = await client().auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
   if (error) fail(error.message === 'Invalid login credentials' ? { message: 'E-Mail oder Passwort falsch.' } : error);
 }
 

@@ -37,8 +37,7 @@ export async function ensureLogin() {
 
     function passwordStep() {
       const email = textField({ label: 'E-Mail' });
-      email.input.type = 'email';
-      email.input.autocomplete = 'username';
+      Object.assign(email.input, { type: 'email', autocomplete: 'username', autocapitalize: 'none', spellcheck: false });
       const pw = textField({ label: 'Passwort' });
       pw.input.type = 'password';
       pw.input.autocomplete = 'current-password';
