@@ -44,7 +44,7 @@ Reihenfolge einhalten. Alles läuft im Browser, keine CLI nötig. Dauer ca. 30 M
 ## 4. IONOS (DNS)
 
 1. IONOS → **Domains & SSL** → `mxreinert.de` → **DNS** → **Datensatz hinzufügen** → **CNAME**
-   - Hostname: `sports`
+   - Hostname: `mxsports`
    - Zeigt auf: `<name>.netlify.app`
    - TTL: 1 Stunde
 2. Warten (meist 5–60 Minuten). Dann in Netlify: **Domain management → HTTPS → Verify DNS configuration**
