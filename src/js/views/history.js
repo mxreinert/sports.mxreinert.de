@@ -6,30 +6,57 @@ import { evaluateWeek, weekChecks, weightSeries, weekOf, weekWeight, avgOf, coac
 import { topSets, rangeState } from '../lib/training.js';
 import { addDays, daysBetween } from '../lib/dates.js';
 import { dateShort, dateMedium, dateDM, duration, num, fixed, signed, pace, kw, wdShort } from '../lib/format.js';
-import { MUSCLES } from '../config.js';
+import { MUSCLES, PHASE } from '../config.js';
+import { phaseStatus } from '../lib/phases.js';
 import { openWorkout, openRun } from './training-sheets.js';
 
 const TABS = [['gewicht', 'Gewicht'], ['ernaehrung', 'Essen'], ['kraft', 'Kraft'], ['volumen', 'Volumen'], ['training', 'Training']];
-const state = { range: 90, listLimit: 40 };
+const state = { range: 90, listLimit: 40, scope: 'phase' };
 
 export function renderHistory(root, ctx) {
   const tab = TABS.some(([id]) => id === ctx.params[0]) ? ctx.params[0] : 'gewicht';
   root.append(largeTitle('Verlauf'));
   root.append(h('div.sticky-seg', seg(TABS, tab, v => ctx.go(`#/verlauf/${v}`, { replace: true }))));
+  const ph = currentPhase(ctx);
+  if (ph) {
+    root.append(h('div.scope-bar',
+      seg([['phase', `${PHASE[ph.phase].label} seit ${dateShort(ph.start)}`], ['all', 'Alles']], state.scope, v => { state.scope = v; ctx.rerender(); }, { small: true })));
+  }
+  const start = scopeStart(ctx);
+  if (start && start > ctx.now && tab !== 'training') {
+    root.append(card(empty('history', 'Deine Phase startet am ' + dateShort(start), 'Ab dann füllt sich der Verlauf. Mit „Alles“ siehst du die Daten von vorher.')));
+    return;
+  }
   ({ gewicht, ernaehrung, kraft, volumen, training })[tab](root, ctx);
 }
 
-const lastWeeks = (snap, now, n) => Array.from({ length: n }, (_, i) => addDays(weekOf(snap, now), -7 * (n - 1 - i)));
+/** Laufende Phase (oder die nächste geplante) */
+const currentPhase = ({ snap, now }) => { const st = phaseStatus(snap.phases, now); return st.phase || st.next || null; };
+
+/** Ab wann der Verlauf zählt: Start der aktuellen Phase – oder null bei „Alles“ */
+const scopeStart = ctx => (state.scope === 'phase' ? currentPhase(ctx)?.start ?? null : null);
+
+/** Die letzten n Wochen, bei „Phase“ nur Wochen ab Phasenstart */
+function lastWeeks(ctx, n) {
+  const { snap, now } = ctx;
+  const start = scopeStart(ctx);
+  const weeks = Array.from({ length: n }, (_, i) => addDays(weekOf(snap, now), -7 * (n - 1 - i)));
+  return start ? weeks.filter(w => addDays(w, 6) >= start) : weeks;
+}
+
+/** Erster Tag eines Tageszeitraums (nicht vor Phasenstart) */
+const fromDay = (ctx, days) => { const from = addDays(ctx.now, -(days - 1)); const start = scopeStart(ctx); return start && start > from ? start : from; };
 
 // ---------- Gewicht ----------
 
-function gewicht(root, { snap, now, rerender }) {
-  const from = addDays(now, -(state.range - 1));
+function gewicht(root, ctx) {
+  const { snap, now, rerender } = ctx;
+  const from = fromDay(ctx, state.range);
   const series = weightSeries(snap, from, now);
   const vals = series.filter(p => p.weight != null);
   const firstAvg = series.find(p => p.avg != null)?.avg ?? null;
   const lastAvg = [...series].reverse().find(p => p.avg != null)?.avg ?? null;
-  const weeks = state.range / 7;
+  const weeks = Math.max(1, daysBetween(from, now).length / 7);
 
   const head = h('div.scrub-head');
   const setHead = i => {
@@ -53,10 +80,10 @@ function gewicht(root, { snap, now, rerender }) {
     h('div.stats',
       h('div.stat', h('div.stat-label', 'Veränderung'), h('div.stat-val', firstAvg != null && lastAvg != null ? `${signed(lastAvg - firstAvg, 1)} kg` : '–'), h('div.stat-sub', `im Zeitraum (Ø)`)),
       h('div.stat', h('div.stat-label', 'pro Woche'), h('div.stat-val', firstAvg != null && lastAvg != null ? `${signed((lastAvg - firstAvg) / weeks, 2)} kg` : '–'), h('div.stat-sub', firstAvg && lastAvg ? `${signed(((lastAvg - firstAvg) / firstAvg / weeks) * 100, 2)} %` : null)),
-      h('div.stat', h('div.stat-label', 'Wiegungen'), h('div.stat-val', String(vals.length)), h('div.stat-sub', `von ${state.range} Tagen`))),
+      h('div.stat', h('div.stat-label', 'Wiegungen'), h('div.stat-val', String(vals.length)), h('div.stat-sub', `von ${daysBetween(from, now).length} Tagen`))),
     h('p.footnote', 'Reine Info für den Coach – der Wiege-Ring bewertet nur, ob du einträgst, nicht was die Waage zeigt.')));
 
-  const ws = lastWeeks(snap, now, 8).reverse();
+  const ws = lastWeeks(ctx, 8).reverse();
   root.append(group(ws.map((w, i) => {
     const avg = weekWeight(snap, w);
     const prev = weekWeight(snap, addDays(w, -7));
@@ -66,19 +93,20 @@ function gewicht(root, { snap, now, rerender }) {
 
 // ---------- Ernährung ----------
 
-function ernaehrung(root, { snap, now }) {
-  const weeks = lastWeeks(snap, now, 8);
+function ernaehrung(root, ctx) {
+  const { snap, now } = ctx;
+  const weeks = lastWeeks(ctx, 8);
   const evs = weeks.map(w => evaluateWeek(snap, w, now));
   const goal = evs[evs.length - 1].rings.nutrition.goal || coachAt(snap, now).nutrition_goal;
   root.append(card(cardHead('Ernährungstage pro Woche', { iconName: 'food', color: 'var(--nutrition)', sub: 'grün = 1 Punkt, gelb = ½ Punkt' }),
     columns(evs.map(ev => ({ label: kw(ev.ws).replace('KW ', ''), value: ev.rings.nutrition.value, color: ev.rings.nutrition.done ? 'var(--nutrition)' : 'color-mix(in srgb, var(--nutrition) 45%, transparent)' })), { goal, max: 7 })));
 
   // Verteilung 28 Tage
-  const days = daysBetween(addDays(now, -27), now);
+  const days = daysBetween(fromDay(ctx, 28), now);
   const dist = { green: 0, yellow: 0, red: 0, none: 0 };
   for (const ev of evs) for (const d of ev.rings.nutrition.days) if (d.date >= days[0] && d.date <= now) dist[d.status]++;
   const total = days.length;
-  root.append(card(cardHead('Letzte 28 Tage'),
+  root.append(card(cardHead(days.length < 28 ? `Seit ${dateShort(days[0])}` : 'Letzte 28 Tage'),
     h('div.dist', [['green', 'var(--ok)', 'Grün'], ['yellow', 'var(--near)', 'Gelb'], ['red', 'var(--miss)', 'Rot'], ['none', 'var(--surface-3)', 'Fehlt']].map(([k, c]) =>
       dist[k] ? h('span', { style: { flex: dist[k], background: c }, title: `${dist[k]} Tage` }) : null)),
     h('div.dist-legend', [['green', 'var(--ok)', 'Grün'], ['yellow', 'var(--near)', 'Gelb'], ['red', 'var(--miss)', 'Rot'], ['none', 'var(--surface-3)', 'nicht eingetragen']].map(([k, c, l]) =>
@@ -99,14 +127,15 @@ function ernaehrung(root, { snap, now }) {
 
 // ---------- Kraft ----------
 
-function kraft(root, { snap, now, go }) {
+function kraft(root, ctx) {
+  const { snap, go } = ctx;
   const mains = Object.values(snap.mappings).filter(m => m.main);
   if (!mains.length) {
     root.append(card(empty('dumbbell', 'Keine Hauptübungen markiert', 'Markiere in der Übungs-Zuordnung deine Hauptübungen (z. B. Bankdrücken, Kniebeuge). Dann siehst du hier dein geschätztes 1RM.',
       btn('Zur Übungs-Zuordnung', { onClick: () => go('#/einstellungen/uebungen') }))));
     return;
   }
-  const weeks = lastWeeks(snap, now, 12);
+  const weeks = lastWeeks(ctx, 12);
   const colors = ['var(--gym)', 'var(--run)', 'var(--nutrition)', 'var(--weigh)', '#bf5af2', '#ff375f'];
   for (const [idx, m] of mains.entries()) {
     const per = weeks.map(w => {
@@ -128,8 +157,9 @@ function kraft(root, { snap, now, go }) {
 
 // ---------- Volumen ----------
 
-function volumen(root, { snap, now }) {
-  const weeks = lastWeeks(snap, now, 8);
+function volumen(root, ctx) {
+  const { snap, now } = ctx;
+  const weeks = lastWeeks(ctx, 8);
   const evs = weeks.map(w => evaluateWeek(snap, w, now));
   root.append(card(cardHead('Sätze pro Muskelgruppe', { iconName: 'muscle', color: 'var(--gym)', sub: '8 Wochen · Farbe = Zielspanne' }),
     h('div.heat-scroll', h('table.heat',
@@ -152,11 +182,14 @@ function volumen(root, { snap, now }) {
 
 // ---------- Training ----------
 
-function training(root, { snap, rerender }) {
+function training(root, ctx) {
+  const { snap, now, rerender } = ctx;
+  const start = scopeStart(ctx);
+  const inScope = d => !start || start > now || d >= start;
   const items = [
     ...snap.workouts.map(w => ({ date: w.date, sort: w.start, kind: 'gym', w })),
     ...snap.runs.map(r => ({ date: r.date, sort: r.start || `${r.date}T12`, kind: 'run', r })),
-  ].sort((a, b) => b.sort.localeCompare(a.sort));
+  ].filter(it => inScope(it.date)).sort((a, b) => b.sort.localeCompare(a.sort));
   root.append(h('div.center-action', btn('Lauf eintragen', { kind: 'tinted', iconName: 'plus', onClick: () => openRun(null) })));
   if (!items.length) { root.append(card(empty('dumbbell', 'Noch keine Trainings', 'Workouts kommen von Hevy, Läufe von Strava – sobald die App online ist.'))); return; }
   const shown = items.slice(0, state.listLimit);
