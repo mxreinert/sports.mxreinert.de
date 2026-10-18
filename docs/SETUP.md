@@ -85,3 +85,14 @@ Reihenfolge: erst Datenbank + Netlify-Variablen, **dann** deployen (Netlify lies
 
 Strava-Verbindung funktioniert nur unter `mxsports.mxreinert.de` (Callback-Domain), nicht unter `*.netlify.app`.
 Danach synchronisiert die App beim Öffnen automatisch (höchstens alle 30 Minuten).
+
+## 7. Push-Erinnerungen (Supplements, Abend-Check-in)
+
+1. **Netlify → Environment variables** (beide als Secret, Production):
+   - `VAPID_PUBLIC_KEY` und `VAPID_PRIVATE_KEY` → Werte aus `.env.local`
+2. Deploy. Netlify installiert `@netlify/blobs` automatisch; die Funktion `push-reminders` läuft alle 5 Minuten.
+3. **iPhone:** Safari → Teilen → **Zum Home-Bildschirm**, App vom Homescreen öffnen (nur so gibt es Push auf iOS).
+4. App → **Einstellungen → Erinnerungen → Push einschalten** → Mitteilungen erlauben → **Test senden**.
+5. Uhrzeiten: Check-in auf derselben Seite, Supplements pro Eintrag unter **Einstellungen → Supplements**.
+
+In Netlify Blobs liegen nur Push-Adresse, Uhrzeiten, Supplement-Namen und „heute erledigt“ – keine Gesundheitswerte.

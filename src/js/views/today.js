@@ -32,7 +32,7 @@ export function renderToday(root, { snap, now, go }) {
   if (phase) root.append(phase);
 
   // Erinnerung ab ~21 Uhr
-  if (!day.logged && hourNow() >= (snap.settings.reminder_hour ?? 21)) {
+  if (!day.logged && snap.settings.reminder_hour != null && hourNow() >= snap.settings.reminder_hour) {
     root.append(h('button.banner', { type: 'button', onClick: () => openCheckin(now) },
       h('span.banner-ic', icon('moon', 20)),
       h('div', h('b', 'Abend-Check-in fehlt noch'), h('div', streak ? `Halte deine Serie von ${streak} ${streak === 1 ? 'Tag' : 'Tagen'} am Leben.` : 'Dauert weniger als eine Minute.')),

@@ -21,12 +21,13 @@ import { infoNote, phaseCard } from './common.js';
 import * as cloud from '../store/cloud.js';
 import { api, runSync } from './sync.js';
 import { suppSettings } from './supplements.js';
+import { pushSupported, needsInstall, deviceSubscription, enablePush, disablePush, reminderPlan } from './push.js';
 import { planAt } from '../lib/supplements.js';
 import { openSetup } from './setup.js';
 import { phaseAt, phaseStatus } from '../lib/phases.js';
 
 const WHERE = cloud.enabled ? 'online (auf allen Geräten)' : 'in diesem Browser';
-const PAGES = { supplements: suppSettings, phasen, coach, ringe, volumen, uebungen, gruppen, pausen, verbindungen, daten };
+const PAGES = { erinnerungen, supplements: suppSettings, phasen, coach, ringe, volumen, uebungen, gruppen, pausen, verbindungen, daten };
 const back = go => iconBtn('chevL', { label: 'Zurück', onClick: () => go('#/einstellungen'), cls: 'back-btn' });
 const phaseLabel = id => PHASE[id]?.label || id;
 const validFromLabel = v => (v.valid_from === BASE_DATE ? 'Startwerte (Basis)' : `ab ${dateFull(v.valid_from)}`);
@@ -53,6 +54,7 @@ export function renderSettings(root, ctx) {
     row({ iconName: 'pause', color: '#8e8e93', title: 'Pausen-Wochen', sub: 'Deload, Krankheit, Urlaub', value: snap.exceptions.length ? String(snap.exceptions.length) : null, chevron: true, onClick: () => go('#/einstellungen/pausen') }),
   ], { header: 'Training' }));
   root.append(group([
+    row({ iconName: 'moon', color: '#5e5ce6', title: 'Erinnerungen', sub: 'Push für Check-in & Supplements', chevron: true, onClick: () => go('#/einstellungen/erinnerungen') }),
     row({ iconName: 'link', color: '#ff2d55', title: 'Hevy & Strava', sub: cloud.enabled ? 'Workouts & Läufe automatisch' : 'nur online', chevron: true, onClick: () => go('#/einstellungen/verbindungen') }),
     row({ iconName: 'database', color: '#0a84ff', title: 'Daten', sub: 'Export, Import, Demo-Daten, Löschen', chevron: true, onClick: () => go('#/einstellungen/daten') }),
   ], { header: 'Verbindungen & Daten' }));
@@ -233,8 +235,7 @@ function ringe(root, { snap, now, go }) {
   // Allgemein (nicht versioniert)
   root.append(group([
     row({ title: 'Wochenstart', right: seg([[1, 'Montag'], [0, 'Sonntag']], snap.settings.week_start, v => db.saveSettings({ week_start: v }), { small: true }) }),
-    row({ title: 'Erinnerung ab', right: seg([[20, '20 Uhr'], [21, '21 Uhr'], [22, '22 Uhr']], snap.settings.reminder_hour ?? 21, v => db.saveSettings({ reminder_hour: v }), { small: true }) }),
-  ], { header: 'Allgemein', footer: 'Wochenstart ändert die Wochengrenzen für alle Wochen. Push-Erinnerungen kommen in Phase 2; bis dahin erscheint ein Hinweis im Dashboard.' }));
+  ], { header: 'Allgemein', footer: 'Wochenstart ändert die Wochengrenzen für alle Wochen. Erinnerungen stellst du unter Einstellungen → Erinnerungen ein.' }));
 
   root.append(versionHistory(snap.rings, v => `Gym ≥${v.gym?.min_duration} min/≥${v.gym?.min_sets} Sätze · Lauf ≥${v.run?.min_duration} min o. ${num(v.run?.min_km, 1)} km`, 'rings', now));
 }
@@ -398,6 +399,46 @@ function pausen(root, { snap, now, go }) {
       setTimeout(() => openException(weekOf(snap, d.get()), snap.exceptions.find(e => weekOf(snap, e.week) === weekOf(snap, d.get())) || null), 250);
     } })) });
   } })));
+}
+
+// ---------- Erinnerungen ----------
+
+function erinnerungen(root, { snap, go }) {
+  root.append(largeTitle('Erinnerungen', { left: back(go), sub: 'Push-Mitteilungen aufs Handy' }));
+
+  // Abend-Check-in: Uhrzeit (gilt auch für den Hinweis auf „Heute“)
+  root.append(group([
+    row({ title: 'Abend-Check-in', right: seg([[20, '20'], [21, '21'], [22, '22'], [null, 'Aus']], snap.settings.reminder_hour ?? null, v => db.saveSettings({ reminder_hour: v }), { small: true }) }),
+  ], { header: 'Check-in', footer: 'Um diese Uhrzeit (Uhr) erinnert die App, wenn der Tag noch nicht eingetragen ist – als Push und als Hinweis auf „Heute“.' }));
+
+  // Supplements mit Uhrzeit
+  const supps = reminderPlan().filter(r => r.kind === 'supp');
+  root.append(group(supps.length ? supps.map(r => row({ iconName: 'pill', color: 'var(--nutrition)', title: `${r.time} Uhr`, sub: r.items.map(i => i.name).join(', ') }))
+    : [row({ title: h('span.muted', 'Keine Supplements mit Uhrzeit') })],
+  { header: 'Supplements', footer: 'Uhrzeiten stellst du unter Supplements pro Eintrag ein. Schon abgehakte Supplements werden nicht erinnert.' }));
+  root.append(h('div.center-action', btn('Supplements bearbeiten', { kind: 'gray', onClick: () => go('#/einstellungen/supplements') })));
+
+  // Dieses Gerät
+  const box = h('div.conn');
+  root.append(box);
+  const show = async () => {
+    if (!cloud.enabled) { box.replaceChildren(infoNote('Push gibt es nur online (mit Login).')); return; }
+    if (needsInstall()) { box.replaceChildren(infoNote('Am iPhone kommen Push-Mitteilungen nur, wenn die App installiert ist: in Safari Teilen → „Zum Home-Bildschirm“, dann die App vom Homescreen öffnen und hier einschalten.')); return; }
+    if (!pushSupported()) { box.replaceChildren(infoNote('Dieser Browser unterstützt keine Push-Mitteilungen.')); return; }
+    const on = !!(await deviceSubscription());
+    const run = async (button, fn, ok) => {
+      button.disabled = true;
+      try { await fn(); if (ok) toast(ok); } catch (e) { toast(e.message, { kind: 'error', ms: 4500 }); } finally { button.disabled = false; show(); }
+    };
+    box.replaceChildren(card(
+      cardHead('Dieses Gerät', { iconName: 'sparkle', color: on ? 'var(--ok)' : '#8e8e93', right: h(`span.chip${on ? '.chip-ok' : '.chip-muted'}`, on ? 'Push an' : 'Push aus') }),
+      h('p.muted', on ? 'Erinnerungen kommen auf dieses Gerät.' : 'Einschalten und im nächsten Fenster Mitteilungen erlauben.'),
+      h('div.btn-row',
+        on ? btn('Ausschalten', { kind: 'gray', onClick: e => run(e.currentTarget, disablePush, 'Push ausgeschaltet') })
+          : btn('Push einschalten', { cls: 'grow', onClick: e => run(e.currentTarget, enablePush, 'Push eingeschaltet') }),
+        on ? btn('Test senden', { kind: 'tinted', cls: 'grow', onClick: e => run(e.currentTarget, () => api('push', { action: 'test' }), 'Test verschickt – kommt gleich an') }) : null)));
+  };
+  show();
 }
 
 // ---------- Verbindungen ----------

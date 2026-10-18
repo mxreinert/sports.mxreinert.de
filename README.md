@@ -69,4 +69,6 @@ tools/serve.mjs           lokaler Server ohne Abhängigkeiten
 - **Sync:** Netlify Functions `integrations` (Hevy-Key, Strava-OAuth) und `sync` (in Etappen). Zugriff nur mit Login + 2FA;
   die Functions schreiben mit dem Login des Nutzers (RLS), kein Service-Key. Hevy-Key / Strava-Token AES-256-GCM-verschlüsselt
   in `integrations`. Netlify-Env: `SECRETS_ENCRYPTION_KEY`, `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`.
-- **Noch offen:** Push-Erinnerung um 21 Uhr, Offline-Schreiben, täglicher Sync ohne geöffnete App.
+- **Push:** Functions `push` (Gerät/Plan, Login + 2FA) und `push-reminders` (alle 5 min). Web Push ohne Bibliothek
+  (RFC 8291/8292, gegen RFC-Testvektor geprüft), Ablage in Netlify Blobs (`@netlify/blobs`). Netlify-Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`.
+- **Noch offen:** Offline-Schreiben, täglicher Hevy/Strava-Sync ohne geöffnete App.

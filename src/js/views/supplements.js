@@ -57,7 +57,7 @@ function editItem(item, now) {
       picker,
       h('div.toggle-row', h('div', h('b', 'Zählt für den Ernährungsring'), h('div.muted', 'Vergessen macht den Tag gelb/rot')), toggle(it.ring, v => { it.ring = v; })),
       h('label.field', h('span.field-label', 'Erinnerung (optional)'), h('span.field-box', time),
-        h('span.field-hint', 'Uhrzeit für die Push-Erinnerung – Push wird im nächsten Schritt aktiviert.'))),
+        h('span.field-hint', 'Push-Erinnerung zu dieser Uhrzeit (unter Einstellungen → Erinnerungen einschalten). Leer = keine Erinnerung.'))),
     footer: h('div.btn-row',
       item ? btn('', { kind: 'gray', iconName: 'trash', cls: 'btn-square', onClick: async () => {
         if (!(await confirmSheet(`„${it.name}“ ab heute aus dem Plan nehmen? Vergangene Tage bleiben, wie sie waren.`, { title: 'Supplement entfernen', ok: 'Entfernen', danger: true }))) return;

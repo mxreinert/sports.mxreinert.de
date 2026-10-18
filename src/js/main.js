@@ -13,6 +13,7 @@ import { renderSettings } from './views/settings.js';
 import { maybeOpenSetup } from './views/setup.js';
 import { ensureLogin } from './views/login.js';
 import { api, autoSync } from './views/sync.js';
+import { syncPushState } from './views/push.js';
 
 const ROUTES = { heute: renderToday, woche: renderWeek, verlauf: renderHistory, berichte: renderReports, einstellungen: renderSettings };
 const TABS = [
@@ -105,6 +106,11 @@ async function boot() {
   if (cloud.enabled) {
     await finishStravaConnect();
     autoSync();
+    // Erinnerungsplan + „heute erledigt“ an den Push-Server (gebündelt, nur bei Änderungen)
+    const pushState = () => syncPushState().catch(e => console.warn('Push-Status:', e.message));
+    let t;
+    db.onChange(() => { clearTimeout(t); t = setTimeout(pushState, 2000); });
+    pushState();
   }
 
   const local = ['localhost', '127.0.0.1'].includes(location.hostname) || /^(192\.168|10\.)/.test(location.hostname);
