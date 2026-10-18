@@ -1,4 +1,4 @@
-// Abend-Check-in (< 1 Minute) und Schnell-Eingabe Gewicht – beide als Sheet.
+// Abend-Check-in (< 1 Minute) und Morgen-Eingabe (Gewicht + Schlaf) – beide als Sheet.
 import { h } from '../ui/h.js';
 import { btn, iconBtn, numField, rating, sheet, textField, toast, confirmSheet } from '../ui/kit.js';
 import * as db from '../store/db.js';
@@ -48,7 +48,6 @@ export function openCheckin(date = today()) {
     const fat = numField({ label: 'Fett', unit: 'g', value: log.fat, placeholder: '0', hint: hint(t.fat), max: 1000 });
     const prev = lastWeight(d);
     const weight = numField({ label: 'Gewicht', unit: 'kg', value: log.weight, decimals: true, placeholder: prev ? num(prev, 1) : '0,0', hint: log.weight != null ? 'bereits eingetragen' : 'falls morgens nicht gewogen', min: 30, max: 300 });
-    const sleep = rating({ label: 'Schlaf', iconName: 'moon', value: log.sleep, color: '#5e5ce6', onChange: () => { dirty = true; } });
     const energy = rating({ label: 'Energie', iconName: 'bolt', value: log.energy, color: '#ffd60a', onChange: () => { dirty = true; } });
     const hunger = rating({ label: 'Hunger', iconName: 'hunger', value: log.hunger, color: '#ff9f0a', onChange: () => { dirty = true; } });
     const suppSel = { ...(log.supps || {}) };
@@ -75,7 +74,7 @@ export function openCheckin(date = today()) {
       }
       await db.saveLog(d, {
         kcal: kcal.get(), protein: protein.get(), carbs: carbs.get(), fat: fat.get(), weight: weight.get(),
-        sleep: sleep.get(), energy: energy.get(), hunger: hunger.get(), note: note.get(), supps: suppSel,
+        energy: energy.get(), hunger: hunger.get(), note: note.get(), supps: suppSel,
       });
       s.close();
       toast(isToday ? 'Check-in gespeichert' : `${dateLong(d)} gespeichert`);
@@ -98,7 +97,7 @@ export function openCheckin(date = today()) {
       sd.due.length ? h('div.field', h('span.field-label', 'Supplements'), suppChips(sd.due, suppSel, id => { suppSel[id] = !suppSel[id]; dirty = true; updateStatus(); })) : null,
       status,
       weight.el,
-      h('div.ratings', sleep.el, energy.el, hunger.el),
+      h('div.ratings', energy.el, hunger.el),
       note.el,
       h('button', { type: 'submit', hidden: true }));
 
@@ -119,17 +118,18 @@ export function openWeight(date = today()) {
   const log = snap.logs[date] || {};
   const prev = lastWeight(date);
   const weight = numField({ label: 'Gewicht', unit: 'kg', value: log.weight, decimals: true, placeholder: prev ? num(prev, 1) : '0,0', min: 30, max: 300, big: true, hint: prev ? `zuletzt ${num(prev, 1)} kg` : null });
+  const sleep = rating({ label: 'Schlaf', iconName: 'moon', value: log.sleep, color: '#5e5ce6' });
   const save = async () => {
     if (!weight.validate()) { toast('Bitte ein Gewicht zwischen 30 und 300 kg eingeben', { kind: 'error' }); return; }
     const v = weight.get();
     if (v != null && prev && Math.abs(v - prev) > 3 && !(await confirmSheet(`${num(v, 1)} kg sind ${num(Math.abs(v - prev), 1)} kg ${v > prev ? 'mehr' : 'weniger'} als zuletzt. Stimmt das?`, { title: 'Großer Sprung', ok: 'Ja, speichern' }))) return;
-    await db.saveLog(date, { weight: v });
+    await db.saveLog(date, { weight: v, sleep: sleep.get() });
     s.close();
-    toast(v == null ? 'Gewicht entfernt' : `${num(v, 1)} kg gespeichert`);
+    toast(v == null ? 'Gespeichert' : `${num(v, 1)} kg gespeichert`);
   };
   const s = sheet({
-    title: 'Gewicht', size: 'sm',
-    body: h('form', { onSubmit: e => { e.preventDefault(); save(); } }, h('div.sheet-sub', dateLong(date)), weight.el, h('button', { type: 'submit', hidden: true })),
+    title: 'Morgens', size: 'sm',
+    body: h('form', { onSubmit: e => { e.preventDefault(); save(); } }, h('div.sheet-sub', dateLong(date)), weight.el, h('div.ratings', sleep.el), h('button', { type: 'submit', hidden: true })),
     footer: h('div.btn-row', btn('Speichern', { onClick: save, cls: 'grow' })),
   });
   setTimeout(() => weight.input.focus(), 360);

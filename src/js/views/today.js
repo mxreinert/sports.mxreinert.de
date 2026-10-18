@@ -61,7 +61,7 @@ export function renderToday(root, { snap, now, go }) {
     h('button.tile', { type: 'button', onClick: () => openWeight(now) },
       h('div.tile-top', h('span', { style: { color: 'var(--weigh)' } }, icon('scale', 20)), h('span.tile-label', 'Gewicht')),
       h('div.tile-val', log.weight != null ? h('span', fixed(log.weight, 1), h('small', ' kg')) : h('span.muted', 'Eintragen')),
-      h('div.tile-sub', log.weight != null ? 'heute gewogen' : 'morgens, nüchtern')),
+      h('div.tile-sub', log.weight != null ? (log.sleep ? `Schlaf ${log.sleep}/5` : 'heute gewogen') : 'morgens, nüchtern + Schlaf')),
     h('button.tile', { type: 'button', onClick: () => openCheckin(now) },
       h('div.tile-top', h('span', { style: { color: 'var(--nutrition)' } }, icon('food', 20)), h('span.tile-label', 'Check-in')),
       h('div.tile-val', log.kcal != null ? h('span', num(log.kcal), h('small', ' kcal')) : h('span.muted', 'Eintragen')),

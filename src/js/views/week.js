@@ -104,7 +104,7 @@ function openDay(snap, date, now) {
       log.note ? infoNote(log.note, 'note') : null,
       (log.sleep || log.energy || log.hunger) ? h('div.chips', log.sleep ? h('span.chip', `Schlaf ${log.sleep}/5`) : null, log.energy ? h('span.chip', `Energie ${log.energy}/5`) : null, log.hunger ? h('span.chip', `Hunger ${log.hunger}/5`) : null) : null),
     footer: future ? null : h('div.btn-row',
-      btn('Gewicht', { kind: 'gray', iconName: 'scale', onClick: () => { s.close(); setTimeout(() => openWeight(date), 200); } }),
+      btn('Gewicht & Schlaf', { kind: 'gray', iconName: 'scale', onClick: () => { s.close(); setTimeout(() => openWeight(date), 200); } }),
       btn(log.kcal != null ? 'Check-in bearbeiten' : 'Check-in nachtragen', { cls: 'grow', onClick: () => { s.close(); setTimeout(() => openCheckin(date), 200); } })),
   });
 }
