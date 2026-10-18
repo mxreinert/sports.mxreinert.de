@@ -32,9 +32,9 @@ export function suppSettings(root, { now, go }) {
     footer: '„Ring“ = zählt für den Ernährungsring: alle genommen = ok, eins vergessen = gelber Tag, mehr = roter Tag. Änderungen gelten ab heute – vergangene Tage behalten ihre Bewertung.',
   }));
   root.append(h('div.center-action', btn('Supplement hinzufügen', { iconName: 'plus', kind: 'tinted', onClick: () => editItem(null, now) })));
-  const versions = sortVersions(snap.supps);
-  if (versions.length > 1) {
-    root.append(group(versions.slice(0, 6).map(v => row({ title: `ab ${dateFull(v.valid_from)}`, sub: v.items.map(i => i.name).join(', ') || 'kein Supplement' })), { header: 'Verlauf' }));
+  const history = planHistory();
+  if (history.length > 1) {
+    root.append(group(history.slice(0, 8).map(e => row({ title: `ab ${dateFull(e.date)}`, sub: e.changes })), { header: 'Verlauf' }));
   }
 }
 
@@ -75,6 +75,26 @@ function editItem(item, now) {
         toast(item ? 'Gespeichert – gilt ab heute' : 'Hinzugefügt');
       } })),
   });
+}
+
+/**
+ * Verlauf des Plans: je Tag nur die zuletzt gespeicherte Version, beschrieben als Änderung zur vorherigen
+ * (z. B. „+ Zink · Kreatin geändert · – Omega 3“). Neueste zuerst.
+ */
+function planHistory() {
+  const byDay = new Map();
+  for (const v of [...snap.supps].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))) byDay.set(v.valid_from, v);
+  const days = [...byDay.values()].sort((a, b) => a.valid_from.localeCompare(b.valid_from));
+  const sig = i => JSON.stringify([i.name, i.dose, i.days, i.ring, i.time]);
+  return days.map((v, k) => {
+    const prev = new Map((days[k - 1]?.items || []).map(i => [i.id, i]));
+    const now = new Map(v.items.map(i => [i.id, i]));
+    const parts = [];
+    for (const i of v.items) if (!prev.has(i.id)) parts.push(`+ ${i.name}`);
+    for (const i of v.items) if (prev.has(i.id) && sig(prev.get(i.id)) !== sig(i)) parts.push(`${i.name} geändert`);
+    for (const i of prev.values()) if (!now.has(i.id)) parts.push(`– ${i.name}`);
+    return { date: v.valid_from, changes: k === 0 ? `Start: ${v.items.map(i => i.name).join(', ') || 'leer'}` : parts.join(' · ') || 'keine Änderung' };
+  }).reverse();
 }
 
 // ---------- Abhaken ----------

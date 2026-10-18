@@ -408,8 +408,8 @@ function erinnerungen(root, { snap, go }) {
 
   // Abend-Check-in: Uhrzeit (gilt auch für den Hinweis auf „Heute“)
   root.append(group([
-    row({ title: 'Abend-Check-in', right: seg([[20, '20'], [21, '21'], [22, '22'], [null, 'Aus']], snap.settings.reminder_hour ?? null, v => db.saveSettings({ reminder_hour: v }), { small: true }) }),
-  ], { header: 'Check-in', footer: 'Um diese Uhrzeit (Uhr) erinnert die App, wenn der Tag noch nicht eingetragen ist – als Push und als Hinweis auf „Heute“.' }));
+    h('div.row.row-stack', h('div.row-title', 'Abend-Check-in um'), seg([[20, '20 Uhr'], [21, '21 Uhr'], [22, '22 Uhr'], [null, 'Aus']], snap.settings.reminder_hour ?? null, v => db.saveSettings({ reminder_hour: v }), { small: true })),
+  ], { header: 'Check-in', footer: 'Um diese Uhrzeit erinnert die App, wenn der Tag noch nicht eingetragen ist – als Push und als Hinweis auf „Heute“.' }));
 
   // Supplements mit Uhrzeit
   const supps = reminderPlan().filter(r => r.kind === 'supp');

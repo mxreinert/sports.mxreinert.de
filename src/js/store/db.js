@@ -5,9 +5,10 @@ import { STORES } from './schema.js';
 import { APP, BASE_DATE, DEFAULTS } from '../config.js';
 import { planNewPhase, planNewEnd } from '../lib/phases.js';
 import { today } from '../lib/dates.js';
+import { toggle as toggleRoutine } from '../lib/routine.js';
 
 export const snap = {
-  logs: {}, workouts: [], runs: [], coach: [], rings: [], muscles: [], exceptions: [], phases: [], supps: [],
+  logs: {}, workouts: [], runs: [], coach: [], rings: [], muscles: [], exceptions: [], phases: [], supps: [], routine: [], routineToday: null,
   mappings: {}, templates: {}, settings: { ...DEFAULTS.settings }, notes: {},
 };
 
@@ -43,6 +44,8 @@ async function reload() {
   const kvMap = Object.fromEntries(kv.map(r => [r.key, r.value]));
   snap.settings = { ...DEFAULTS.settings, ...(kvMap.settings || {}) };
   snap.supps = kvMap.supplement_plans || [];
+  snap.routine = kvMap.routine || [];
+  snap.routineToday = kvMap.routine_today || null;
   snap.notes = Object.fromEntries(Object.entries(kvMap).filter(([k]) => k.startsWith('note:')).map(([k, v]) => [k.slice(5), v]));
 }
 
@@ -115,6 +118,26 @@ export async function toggleSupp(date, id) {
   if (cur[id]) delete cur[id];
   else cur[id] = true;
   await saveLog(date, { supps: cur });
+}
+
+// ---------- Morgen-Routine (kein Verlauf: nur Schritte + heutiger Stand) ----------
+
+export async function saveRoutine(steps) {
+  snap.routine = steps;
+  await backend.put('kv', { key: 'routine', value: steps });
+  emit();
+}
+
+export async function toggleRoutineStep(date, id) {
+  snap.routineToday = toggleRoutine(snap.routineToday, date, id);
+  await backend.put('kv', { key: 'routine_today', value: snap.routineToday });
+  emit();
+}
+
+export async function resetRoutineToday() {
+  snap.routineToday = null;
+  await backend.del('kv', 'routine_today');
+  emit();
 }
 
 // ---------- Phasen ----------
