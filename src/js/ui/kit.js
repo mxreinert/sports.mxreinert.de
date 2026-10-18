@@ -85,7 +85,7 @@ export function toggle(checked, onChange) {
 function parseNum(v) {
   if (v == null) return null;
   const s = String(v).trim().replace(/\s/g, '').replace(',', '.');
-  if (s === '') return null;
+  if (s === '' || /^[-–—]$/.test(s)) return null; // leer oder „–“ = kein Wert
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
@@ -102,7 +102,8 @@ export function numField({ label, value, unit, placeholder, decimals = false, mi
   const get = () => parseNum(input.value);
   const validate = () => {
     const v = get();
-    const bad = input.value.trim() !== '' && (v == null || (min != null && v < min) || (max != null && v > max));
+    const empty = /^\s*[-–—]?\s*$/.test(input.value);
+    const bad = !empty && (v == null || (min != null && v < min) || (max != null && v > max));
     el.classList.toggle('invalid', bad);
     return !bad;
   };
