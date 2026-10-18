@@ -128,7 +128,7 @@ export function openWeight(date = today()) {
     toast(v == null ? 'Gespeichert' : `${num(v, 1)} kg gespeichert`);
   };
   const s = sheet({
-    title: 'Morgens', size: 'sm',
+    title: 'Gewicht & Schlaf', size: 'sm',
     body: h('form', { onSubmit: e => { e.preventDefault(); save(); } }, h('div.sheet-sub', dateLong(date)), weight.el, h('div.ratings', sleep.el), h('button', { type: 'submit', hidden: true })),
     footer: h('div.btn-row', btn('Speichern', { onClick: save, cls: 'grow' })),
   });
