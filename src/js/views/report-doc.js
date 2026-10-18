@@ -13,6 +13,7 @@ import { dateDM, dateFull, dateShort, duration, num, fixed, signed, pace, kw, we
 import { MUSCLES, PHASE, RINGS, EXCEPTION_REASONS } from '../config.js';
 import { phaseAt } from '../lib/phases.js';
 import { muscleRows } from './common.js';
+import { suppDay } from '../lib/supplements.js';
 
 const CHART_W = 660;
 const phaseLabel = id => PHASE[id]?.label || id;
@@ -108,6 +109,7 @@ export function weekReport(snap, ws, { extraNote } = {}) {
         ['Protein', ...days.map(d => num(snap.logs[d]?.protein))],
         ['KH', ...days.map(d => num(snap.logs[d]?.carbs))],
         ['Fett', ...days.map(d => num(snap.logs[d]?.fat))],
+        ...(days.some(d => suppDay(snap, d).due.length) ? [['Supplements', ...days.map(d => { const sd = suppDay(snap, d); return sd.due.length ? `${sd.taken.length}/${sd.due.length}` : '–'; })]] : []),
         ['Status', ...nutr.map(d => stateDot({ green: 'ok', yellow: 'near', red: 'miss', none: 'open' }[d.status], 11))],
       ], 'doc-days')),
 

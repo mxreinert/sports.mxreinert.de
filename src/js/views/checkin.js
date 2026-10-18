@@ -7,6 +7,8 @@ import { coachAt, ringsAt, nutritionDay } from '../lib/engine.js';
 import { dateLong, num, signed } from '../lib/format.js';
 import { addDays, today } from '../lib/dates.js';
 import { NUT_KIND, NUT_LABEL, pill } from './common.js';
+import { suppDay, suppCondition } from '../lib/supplements.js';
+import { suppChips } from './supplements.js';
 
 function lastWeight(before) {
   for (let d = addDays(before, -1), i = 0; i < 60; d = addDays(d, -1), i++) if (snap.logs[d]?.weight != null) return snap.logs[d].weight;
@@ -49,13 +51,16 @@ export function openCheckin(date = today()) {
     const sleep = rating({ label: 'Schlaf', iconName: 'moon', value: log.sleep, color: '#5e5ce6', onChange: () => { dirty = true; } });
     const energy = rating({ label: 'Energie', iconName: 'bolt', value: log.energy, color: '#ffd60a', onChange: () => { dirty = true; } });
     const hunger = rating({ label: 'Hunger', iconName: 'hunger', value: log.hunger, color: '#ff9f0a', onChange: () => { dirty = true; } });
+    const suppSel = { ...(log.supps || {}) };
+    const sd = suppDay(snap, d);
+    const suppCond = () => suppCondition(suppDay({ ...snap, logs: { ...snap.logs, [d]: { ...log, supps: suppSel } } }, d));
     const note = textField({ label: 'Notiz', value: log.note || '', placeholder: 'Kurz, z. B. „auswärts gegessen“', multiline: true, rows: 2 });
 
     // Live-Vorschau: Wie wird der Tag bewertet?
     const status = h('div.checkin-status');
     const updateStatus = () => {
       const preview = { kcal: kcal.get(), protein: protein.get(), carbs: carbs.get(), fat: fat.get() };
-      const res = nutritionDay(preview, t, rules.nutrition);
+      const res = nutritionDay(preview, t, rules.nutrition, suppCond());
       status.replaceChildren(...[pill(NUT_LABEL[res.status], NUT_KIND[res.status]),
         res.status !== 'none' && t.kcal && preview.kcal != null ? h('span.muted', `${signed(preview.kcal - t.kcal, 0)} kcal zum Ziel`) : null].filter(Boolean));
     };
@@ -70,7 +75,7 @@ export function openCheckin(date = today()) {
       }
       await db.saveLog(d, {
         kcal: kcal.get(), protein: protein.get(), carbs: carbs.get(), fat: fat.get(), weight: weight.get(),
-        sleep: sleep.get(), energy: energy.get(), hunger: hunger.get(), note: note.get(),
+        sleep: sleep.get(), energy: energy.get(), hunger: hunger.get(), note: note.get(), supps: suppSel,
       });
       s.close();
       toast(isToday ? 'Check-in gespeichert' : `${dateLong(d)} gespeichert`);
@@ -90,6 +95,7 @@ export function openCheckin(date = today()) {
         isToday ? h('span.day-switch-gap') : iconBtn('chevR', { label: 'Nächster Tag', onClick: () => go(addDays(d, 1)) })),
       kcal.el,
       h('div.grid-3', protein.el, carbs.el, fat.el),
+      sd.due.length ? h('div.field', h('span.field-label', 'Supplements'), suppChips(sd.due, suppSel, id => { suppSel[id] = !suppSel[id]; dirty = true; updateStatus(); })) : null,
       status,
       weight.el,
       h('div.ratings', sleep.el, energy.el, hunger.el),

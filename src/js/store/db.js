@@ -7,7 +7,7 @@ import { planNewPhase, planNewEnd } from '../lib/phases.js';
 import { today } from '../lib/dates.js';
 
 export const snap = {
-  logs: {}, workouts: [], runs: [], coach: [], rings: [], muscles: [], exceptions: [], phases: [],
+  logs: {}, workouts: [], runs: [], coach: [], rings: [], muscles: [], exceptions: [], phases: [], supps: [],
   mappings: {}, templates: {}, settings: { ...DEFAULTS.settings }, notes: {},
 };
 
@@ -42,6 +42,7 @@ async function reload() {
   snap.templates = Object.fromEntries(templates.map(t => [t.id, t]));
   const kvMap = Object.fromEntries(kv.map(r => [r.key, r.value]));
   snap.settings = { ...DEFAULTS.settings, ...(kvMap.settings || {}) };
+  snap.supps = kvMap.supplement_plans || [];
   snap.notes = Object.fromEntries(Object.entries(kvMap).filter(([k]) => k.startsWith('note:')).map(([k, v]) => [k.slice(5), v]));
 }
 
@@ -55,13 +56,14 @@ async function seedBase() {
 
 // ---------- Tageswerte ----------
 
-const LOG_FIELDS = ['kcal', 'protein', 'carbs', 'fat', 'weight', 'sleep', 'energy', 'hunger', 'note'];
+const LOG_FIELDS = ['kcal', 'protein', 'carbs', 'fat', 'weight', 'sleep', 'energy', 'hunger', 'note', 'supps'];
 
 /** Felder eines Tages setzen (null/'' löscht ein Feld). Ein leerer Tag wird entfernt. */
 export async function saveLog(date, patch) {
   const cur = { ...(snap.logs[date] || { date }) };
   for (const [k, v] of Object.entries(patch)) {
-    if (v === null || v === '' || v === undefined) delete cur[k];
+    const emptyObj = v && typeof v === 'object' && !Object.values(v).some(Boolean);
+    if (v === null || v === '' || v === undefined || emptyObj) delete cur[k];
     else cur[k] = v;
   }
   const empty = !LOG_FIELDS.some(k => cur[k] != null);
@@ -95,6 +97,24 @@ export async function deleteVersion(kind, id) {
   await backend.del(VERSION_STORE[kind], id);
   snap[kind] = snap[kind].filter(x => x.id !== id);
   emit();
+}
+
+// ---------- Supplements ----------
+
+/** Supplement-Plan als neue Version (versioniert im kv-Speicher, alte Tage bleiben unverändert) */
+export async function saveSuppPlan(items, validFrom) {
+  const row = { id: uid(), valid_from: validFrom, created_at: nowIso(), items };
+  snap.supps = [...snap.supps, row];
+  await backend.put('kv', { key: 'supplement_plans', value: snap.supps });
+  emit();
+}
+
+/** Supplement an einem Tag als genommen/nicht genommen markieren */
+export async function toggleSupp(date, id) {
+  const cur = { ...(snap.logs[date]?.supps || {}) };
+  if (cur[id]) delete cur[id];
+  else cur[id] = true;
+  await saveLog(date, { supps: cur });
 }
 
 // ---------- Phasen ----------

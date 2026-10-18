@@ -20,11 +20,13 @@ import { openException } from './week.js';
 import { infoNote, phaseCard } from './common.js';
 import * as cloud from '../store/cloud.js';
 import { api, runSync } from './sync.js';
+import { suppSettings } from './supplements.js';
+import { planAt } from '../lib/supplements.js';
 import { openSetup } from './setup.js';
 import { phaseAt, phaseStatus } from '../lib/phases.js';
 
 const WHERE = cloud.enabled ? 'online (auf allen Geräten)' : 'in diesem Browser';
-const PAGES = { phasen, coach, ringe, volumen, uebungen, gruppen, pausen, verbindungen, daten };
+const PAGES = { supplements: suppSettings, phasen, coach, ringe, volumen, uebungen, gruppen, pausen, verbindungen, daten };
 const back = go => iconBtn('chevL', { label: 'Zurück', onClick: () => go('#/einstellungen'), cls: 'back-btn' });
 const phaseLabel = id => PHASE[id]?.label || id;
 const validFromLabel = v => (v.valid_from === BASE_DATE ? 'Startwerte (Basis)' : `ab ${dateFull(v.valid_from)}`);
@@ -42,6 +44,7 @@ export function renderSettings(root, ctx) {
     row({ iconName: 'history', color: ps.phase ? PHASE[ps.phase.phase].color : '#8e8e93', title: 'Phasen', sub: ps.phase ? `${phaseLabel(ps.phase.phase)} ${ps.phase.end ? `bis ${dateFull(ps.phase.end)}` : 'ohne Enddatum'}${ps.next ? ` · danach ${phaseLabel(ps.next.phase)}` : ''}` : 'Noch keine Phase', chevron: true, onClick: () => go('#/einstellungen/phasen') }),
     row({ iconName: 'target', color: '#ff375f', title: 'Coach-Ziele', sub: `${phaseLabel(c.phase)} · ${c.kcal ? `${num(c.kcal)} kcal` : 'kcal fehlt'} · ${c.protein ? `${c.protein} g Protein` : 'Protein fehlt'}`, chevron: true, onClick: () => go('#/einstellungen/coach') }),
     row({ iconName: 'today', color: '#30d158', title: 'Ringe & Trainingsplan', sub: 'Regeln, Trainingstage, Wochenstart', chevron: true, onClick: () => go('#/einstellungen/ringe') }),
+    row({ iconName: 'pill', color: '#ff9f0a', title: 'Supplements', sub: planAt(snap, now).length ? planAt(snap, now).map(i => i.name).join(', ') : 'Plan einrichten', chevron: true, onClick: () => go('#/einstellungen/supplements') }),
     row({ iconName: 'muscle', color: '#ff9f0a', title: 'Volumen-Ziele', sub: 'Sätze pro Muskelgruppe', chevron: true, onClick: () => go('#/einstellungen/volumen') }),
   ], { header: 'Ziele (versioniert)' }));
   root.append(group([

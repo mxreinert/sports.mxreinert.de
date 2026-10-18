@@ -10,6 +10,7 @@ import { DEFAULTS, DEFAULT_GROUP_MAP, MUSCLES, RINGS } from '../config.js';
 import { versionAt, withDefaults } from './versions.js';
 import { addDays, daysBetween, today as todayFn, weekDays, weekStart, weekday } from './dates.js';
 import { muscleSets, rangeState, tonnage, workingSets } from './training.js';
+import { suppDay, suppCondition } from './supplements.js';
 
 // ---------- Einstellungen zu einem Datum ----------
 
@@ -87,8 +88,9 @@ const isLogged = log => log != null && log.kcal != null;
 /**
  * Ernährungstag bewerten. Jede aktive Bedingung ist ok / near / miss.
  * grün = alles ok · gelb = nichts verfehlt, aber etwas knapp (nur wenn "gelber Tag" an) · rot = sonst.
+ * supp: Supplement-Bedingung (suppCondition) oder null
  */
-export function nutritionDay(log, t, rules = {}) {
+export function nutritionDay(log, t, rules = {}, supp = null) {
   if (!isLogged(log)) return { status: 'none', points: 0, items: [] };
   const items = [];
   const band = (diff, ok, near) => (Math.abs(diff) <= ok ? 'ok' : Math.abs(diff) <= near ? 'near' : 'miss');
@@ -107,6 +109,7 @@ export function nutritionDay(log, t, rules = {}) {
       items.push({ key, label, actual: a, target: t[key], unit: 'g', state: a == null ? 'miss' : band(a - t[key], t.macro_tol, t.macro_tol_yellow) });
     }
   }
+  if (supp) items.push(supp);
   const miss = items.some(i => i.state === 'miss');
   const near = items.some(i => i.state === 'near');
   const status = miss ? 'red' : near ? (rules.yellow === false ? 'red' : 'yellow') : 'green';
@@ -127,7 +130,7 @@ export function evaluateWeek(snap, ws, now = todayFn()) {
 
   const gym = gymItems(workouts, rules.gym);
   const runItems = [...runs].sort((a, b) => a.date.localeCompare(b.date)).map(run => ({ run, ...qualifyRun(run, rules.run) }));
-  const nutDays = days.map(d => ({ date: d, ...nutritionDay(snap.logs?.[d], coachAt(snap, d), rules.nutrition) }));
+  const nutDays = days.map(d => ({ date: d, ...nutritionDay(snap.logs?.[d], coachAt(snap, d), rules.nutrition, suppCondition(suppDay(snap, d))) }));
   const weighDays = days.filter(d => snap.logs?.[d]?.weight != null);
 
   const rings = {
@@ -188,14 +191,24 @@ export function dayChecks(snap, date, now = todayFn()) {
   const pending = date < now ? 'miss' : 'open';
   const items = [];
 
-  const nut = nutritionDay(log, t, rules.nutrition);
+  const sd = suppDay(snap, date);
+  const nut = nutritionDay(log, t, rules.nutrition, suppCondition(sd));
   if (rules.nutrition.active) {
     if (nut.status === 'none') {
       if (t.kcal) items.push({ key: 'kcal', label: 'kcal im Korridor', actual: null, target: t.kcal, unit: 'kcal', state: pending });
       if (t.protein) items.push({ key: 'protein', label: 'Protein erreicht', actual: null, target: t.protein, unit: 'g', state: pending });
     } else {
-      items.push(...nut.items);
+      items.push(...nut.items.filter(i => i.key !== 'supps'));
     }
+  }
+  // Supplements: alle fälligen zählen; Bewertung nach den Ring-relevanten
+  if (sd.due.length) {
+    const all = sd.taken.length === sd.due.length;
+    const ringMissing = sd.missingRequired.length;
+    items.push({
+      key: 'supps', label: 'Supplements', actual: `${sd.taken.length}/${sd.due.length}`,
+      state: all ? 'ok' : date >= now ? 'open' : ringMissing >= 2 ? 'miss' : 'near',
+    });
   }
   if (rules.weigh.active) {
     items.push({ key: 'weight', label: 'Gewogen', actual: log?.weight ?? null, unit: 'kg', state: log?.weight != null ? 'ok' : pending });

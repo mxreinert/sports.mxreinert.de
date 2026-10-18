@@ -22,6 +22,7 @@ const P = {
   bolt: '<path d="M13 2.5 4.5 13.5H12l-1 8 8.5-11H12l1-8Z"/>',
   hunger: '<path d="M4 11h16a8 8 0 0 1-16 0Z"/><path d="M12 3c-1 1.2-1 2.8 0 4M8.5 4.5c-.8 1-.8 2 0 3M15.5 4.5c.8 1 .8 2 0 3"/>',
   note: '<path d="M5 4.5h14v15H5z" rx="2"/><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4"/>',
+  pill: '<rect x="3.2" y="8.5" width="17.6" height="7" rx="3.5" transform="rotate(-40 12 12)"/><path d="m9.3 9.7 5 4.6"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.6v.1"/>',
   trash: '<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/>',
   download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>',

@@ -9,6 +9,7 @@ import { dateLong, dateShort, duration, num, fixed, signed, pace, kw } from '../
 import { ringsBlock, checkList, scoreBar, phaseCard, NUT_KIND, NUT_LABEL, pill } from './common.js';
 import { openCheckin, openWeight } from './checkin.js';
 import { runSync } from './sync.js';
+import { suppCard } from './supplements.js';
 
 export function renderToday(root, { snap, now, go }) {
   const ws = weekOf(snap, now);
@@ -66,10 +67,14 @@ export function renderToday(root, { snap, now, go }) {
       h('div.tile-val', log.kcal != null ? h('span', num(log.kcal), h('small', ' kcal')) : h('span.muted', 'Eintragen')),
       h('div.tile-sub', log.kcal != null ? pill(NUT_LABEL[nut], NUT_KIND[nut]) : t.kcal ? `Ziel ${num(t.kcal)} kcal` : 'abends, < 1 Minute'))));
 
+  // Supplements zum Abhaken
+  const supp = suppCard(now, go);
+  if (supp) root.append(supp);
+
   // Ziel-Check heute
   root.append(card(
     cardHead('Ziel-Check heute', { iconName: 'target', sub: `${day.items.filter(i => i.state === 'ok').length} von ${day.items.length} erledigt` }),
-    checkList(day.items, { onItem: it => (it.key === 'weight' ? openWeight(now) : ['gym', 'run'].includes(it.key) ? go(`#/woche/${ws}`) : openCheckin(now)) })));
+    checkList(day.items, { onItem: it => (it.key === 'weight' ? openWeight(now) : ['gym', 'run'].includes(it.key) ? go(`#/woche/${ws}`) : it.key === 'supps' ? null : openCheckin(now)) })));
 
   // Training heute
   const todays = [

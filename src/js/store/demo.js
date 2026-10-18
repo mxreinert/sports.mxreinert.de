@@ -85,6 +85,12 @@ export async function loadDemo({ weeks = 12 } = {}) {
     ...['79D0BB3A', 'D04AC939', '2B4B7310', '7B8D84E8', '55E6546F'].map(id => ({ template_id: id, title: NAMES[id], main: true })),
   ];
 
+  const suppPlan = [{ id: 'demo-s0', valid_from: firstWeek, created_at: created, items: [
+    { id: 'kreatin', name: 'Kreatin', dose: '5 g', days: [], ring: true, time: '08:00' },
+    { id: 'vitd', name: 'Vitamin D3 + K2', dose: '2000 IE', days: [], ring: true, time: '08:00' },
+    { id: 'omega', name: 'Omega 3', dose: '2 Kapseln', days: [1, 3, 5], ring: false, time: null },
+    { id: 'magnesium', name: 'Magnesium', dose: '300 mg', days: [], ring: false, time: '21:30' },
+  ] }];
   const logs = [];
   const workouts = [];
   const runs = [];
@@ -117,6 +123,10 @@ export async function loadDemo({ weeks = 12 } = {}) {
       }
       if (r() < 0.12) log.note = ['Wenig geschlafen, Training trotzdem gut', 'Essen auswärts, kcal geschätzt', 'Knie leicht gereizt bei Kniebeugen', 'Sehr guter Pump heute', 'Stressiger Arbeitstag'][Math.floor(r() * 5)];
     }
+    // Supplements meistens genommen
+    const supps = {};
+    for (const it of suppPlan[0].items) if ((!it.days.length || it.days.includes(wd)) && r() < (isToday ? 0.5 : 0.9)) supps[it.id] = true;
+    if (Object.keys(supps).length) log.supps = supps;
     if (Object.keys(log).length > 1) logs.push(log);
 
     // Gym nach Plan (Mo Di Do Fr Sa), ab und zu ausgelassen
@@ -148,7 +158,7 @@ export async function loadDemo({ weeks = 12 } = {}) {
     phases, coach_targets: coach, ring_settings: rings, muscle_targets: muscles, week_exceptions: exceptions,
     exercise_mapping: mappings, hevy_templates: TEMPLATES.map(fromHevyTemplate),
     daily_log: logs, workouts, runs,
-    kv: [{ key: 'settings', value: { ...DEFAULTS.settings } }],
+    kv: [{ key: 'settings', value: { ...DEFAULTS.settings } }, { key: 'supplement_plans', value: suppPlan }],
   });
 }
 

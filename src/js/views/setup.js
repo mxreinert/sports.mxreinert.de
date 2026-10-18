@@ -15,12 +15,13 @@ import { dateFull, dateLong, num } from '../lib/format.js';
 import { PHASES, PHASE, RINGS, WEEKDAYS } from '../config.js';
 
 let open = false;
+let closeFirst = null; // schließt ein offenes Willkommens-Setup, wenn inzwischen Phasen da sind (z. B. Import)
 let laterThisSession = false;
 
 /** Nach jedem Zeichnen aufrufen: öffnet das Setup, wenn noch keine Phase existiert oder die Phase abgelaufen ist. */
 export function maybeOpenSetup() {
-  if (open) return;
   const need = setupNeeded(snap.phases, today());
+  if (open) { if (need !== 'first') closeFirst?.(); return; }
   if (need === 'first' || (need === 'expired' && !laterThisSession)) openSetup(need);
 }
 
@@ -96,7 +97,10 @@ export function openSetup(mode = 'first') {
   }
   const next = (label = 'Weiter') => btn(label, { cls: 'full', onClick: () => go(i + 1) });
 
+  if (mode === 'first') closeFirst = () => close();
+
   function close() {
+    closeFirst = null;
     // „Später“ / Schließen: in dieser Sitzung nicht erneut nachfragen
     if (mode === 'expired') laterThisSession = true;
     root.classList.remove('in');
