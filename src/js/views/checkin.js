@@ -9,10 +9,18 @@ import { addDays, today } from '../lib/dates.js';
 import { NUT_KIND, NUT_LABEL, pill } from './common.js';
 import { suppDay, suppCondition } from '../lib/supplements.js';
 import { suppChips } from './supplements.js';
+import { phaseAt } from '../lib/phases.js';
+import { icon } from '../ui/icons.js';
 
 function lastWeight(before) {
   for (let d = addDays(before, -1), i = 0; i < 60; d = addDays(d, -1), i++) if (snap.logs[d]?.weight != null) return snap.logs[d].weight;
   return null;
+}
+
+/** Vortag ohne Check-in (innerhalb der Phase bzw. nach früheren Einträgen)? */
+function missingBefore(d) {
+  const y = addDays(d, -1);
+  return snap.logs[y]?.kcal == null && (phaseAt(snap.phases, y) || Object.keys(snap.logs).some(x => x < y));
 }
 
 /** Abend-Check-in. Mit ‹ › lassen sich vergangene Tage nachtragen (nicht in die Zukunft). */
@@ -92,6 +100,8 @@ export function openCheckin(date = today()) {
         iconBtn('chevL', { label: 'Vorheriger Tag', onClick: () => go(addDays(d, -1)) }),
         h('div.day-switch-mid', h('b', dateLong(d)), h('span', isToday ? 'heute' : snap.logs[d]?.kcal != null ? 'eingetragen' : 'nachtragen')),
         isToday ? h('span.day-switch-gap') : iconBtn('chevR', { label: 'Nächster Tag', onClick: () => go(addDays(d, 1)) })),
+      missingBefore(d) ? h('button.note.note-warn', { type: 'button', onClick: () => go(addDays(d, -1)) },
+        icon('history', 17), h('div', h('b', `${dateLong(addDays(d, -1))} fehlt noch`), ' – jetzt nachtragen'), icon('chevL', 16)) : null,
       kcal.el,
       h('div.grid-3', protein.el, carbs.el, fat.el),
       sd.due.length ? h('div.field', h('span.field-label', 'Supplements'), suppChips(sd.due, suppSel, id => { suppSel[id] = !suppSel[id]; dirty = true; updateStatus(); })) : null,

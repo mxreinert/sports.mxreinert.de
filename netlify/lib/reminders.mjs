@@ -8,14 +8,16 @@
 
 const TZ = 'Europe/Luxembourg';
 const WINDOW_MIN = 30;
+const DAY_START_HOUR = 3; // wie in der App: Tageswechsel um 3 Uhr
 
 const parts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', weekday: 'short' });
 const WD = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-/** Ortszeit in Luxemburg: { date: 'YYYY-MM-DD', minutes: 0–1439, weekday: 0–6 } */
+/** Ortszeit in Luxemburg: { date, weekday } des App-Tags (Wechsel um 3 Uhr), minutes = echte Uhrzeit 0–1439 */
 export function localNow(at = new Date()) {
-  const p = Object.fromEntries(parts.formatToParts(at).map(x => [x.type, x.value]));
-  return { date: `${p.year}-${p.month}-${p.day}`, minutes: Number(p.hour) * 60 + Number(p.minute), weekday: WD[p.weekday] };
+  const clock = Object.fromEntries(parts.formatToParts(at).map(x => [x.type, x.value]));
+  const day = Object.fromEntries(parts.formatToParts(new Date(at.getTime() - DAY_START_HOUR * 3600e3)).map(x => [x.type, x.value]));
+  return { date: `${day.year}-${day.month}-${day.day}`, minutes: Number(clock.hour) * 60 + Number(clock.minute), weekday: WD[day.weekday] };
 }
 
 const toMinutes = hhmm => {

@@ -37,5 +37,7 @@ test('Check-in-Erinnerung nur, wenn noch nicht eingetragen; nie doppelt', () => 
 test('Ortszeit Luxemburg inkl. Sommer-/Winterzeit', () => {
   assert.deepEqual(localNow(new Date('2026-11-16T19:00:00Z')), { date: '2026-11-16', minutes: 20 * 60, weekday: 1 }); // Winterzeit UTC+1
   assert.deepEqual(localNow(new Date('2026-07-13T19:00:00Z')), { date: '2026-07-13', minutes: 21 * 60, weekday: 1 }); // Sommerzeit UTC+2
-  assert.equal(localNow(new Date('2026-10-19T23:30:00Z')).date, '2026-10-20', 'nach Mitternacht Ortszeit');
+  assert.equal(localNow(new Date('2026-10-19T23:30:00Z')).date, '2026-10-19', '01:30 Uhr zählt noch zum Vortag');
+  assert.equal(localNow(new Date('2026-10-19T23:30:00Z')).minutes, 90, 'Uhrzeit bleibt echt');
+  assert.equal(localNow(new Date('2026-10-20T01:30:00Z')).date, '2026-10-20', 'ab 3 Uhr neuer Tag');
 });

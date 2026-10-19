@@ -12,8 +12,16 @@ export function dayOf(input) {
   return dayFmt.format(d);
 }
 
-export const today = (now = new Date()) => dayOf(now);
-export const hourNow = (now = new Date()) => Number(hourFmt.format(now));
+/** Der App-Tag wechselt erst um 3 Uhr nachts: Wer um 0:30 einträgt, landet noch beim Vortag. */
+export const DAY_START_HOUR = 3;
+
+export const today = (now = new Date()) => dayOf(new Date(now.getTime() - DAY_START_HOUR * 3600e3));
+
+/** Stunde im App-Tag: 0–2 Uhr zählen als 24–26 Uhr des Vortags (z. B. für die 21-Uhr-Erinnerung) */
+export function hourNow(now = new Date()) {
+  const h = Number(hourFmt.format(now));
+  return h < DAY_START_HOUR ? h + 24 : h;
+}
 
 export function parse(s) {
   const [y, m, d] = s.split('-').map(Number);

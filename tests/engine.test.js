@@ -320,3 +320,12 @@ test('Archiv: ausgeblendet, bis die Übung wieder trainiert wird', async () => {
   assert.equal(isArchived({ archived_at: '2026-10-17' }, '2026-10-20'), false, 'wieder trainiert → aktiv');
   assert.equal(isArchived({ archived_at: null }, '2025-01-01'), false, 'wiederhergestellt');
 });
+
+test('App-Tag wechselt um 3 Uhr nachts', async () => {
+  const { today, hourNow } = await import('../src/js/lib/dates.js');
+  assert.equal(today(new Date('2026-10-19T22:09:00Z')), '2026-10-19', '00:09 Uhr → noch Vortag');
+  assert.equal(today(new Date('2026-10-20T00:59:00Z')), '2026-10-19', '02:59 Uhr → noch Vortag');
+  assert.equal(today(new Date('2026-10-20T01:00:00Z')), '2026-10-20', '03:00 Uhr → neuer Tag');
+  assert.equal(hourNow(new Date('2026-10-19T22:30:00Z')), 24, '00:30 zählt als 24 Uhr');
+  assert.equal(hourNow(new Date('2026-10-20T05:00:00Z')), 7);
+});

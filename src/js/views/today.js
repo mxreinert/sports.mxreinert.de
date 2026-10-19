@@ -10,6 +10,7 @@ import { ringsBlock, checkList, scoreBar, phaseCard, NUT_KIND, NUT_LABEL, pill }
 import { openCheckin, openWeight } from './checkin.js';
 import { runSync } from './sync.js';
 import { suppCard } from './supplements.js';
+import { phaseAt } from '../lib/phases.js';
 
 export function renderToday(root, { snap, now, go }) {
   const ws = weekOf(snap, now);
@@ -41,7 +42,7 @@ export function renderToday(root, { snap, now, go }) {
 
   // Gestern vergessen? (nur wenn es davor schon Einträge gibt, nicht am ersten Tag)
   const yesterday = addDays(now, -1);
-  if (snap.logs[yesterday]?.kcal == null && Object.keys(snap.logs).some(d => d < yesterday)) {
+  if (snap.logs[yesterday]?.kcal == null && (phaseAt(snap.phases, yesterday) || Object.keys(snap.logs).some(d => d < yesterday))) {
     root.append(h('button.banner.banner-soft', { type: 'button', onClick: () => openCheckin(yesterday) },
       h('span.banner-ic', icon('history', 18)),
       h('div', h('b', 'Gestern fehlt noch'), h('div', 'Jetzt nachtragen – ältere Tage im Check-in mit ‹ ›.')),
