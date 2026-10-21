@@ -40,6 +40,10 @@ export function renderSettings(root, ctx) {
   const c = coachAt(snap, now);
   const missing = exerciseList(snap).filter(e => !e.archived && e.m.source === 'fehlt').length;
   root.append(largeTitle('Einstellungen'));
+  root.append(h('button.pinned', { type: 'button', onClick: () => go('#/berichte') },
+    h('span.pinned-ic', icon('report', 22)),
+    h('div', h('b', 'Berichte'), h('div.muted', 'Wochen- & Zweiwochenbericht als PDF für den Coach')),
+    icon('chevR', 18)));
   const ps = phaseStatus(snap.phases, now);
   root.append(group([
     row({ iconName: 'history', color: ps.phase ? PHASE[ps.phase.phase].color : '#8e8e93', title: 'Phasen', sub: ps.phase ? `${phaseLabel(ps.phase.phase)} ${ps.phase.end ? `bis ${dateFull(ps.phase.end)}` : 'ohne Enddatum'}${ps.next ? ` · danach ${phaseLabel(ps.next.phase)}` : ''}` : 'Noch keine Phase', chevron: true, onClick: () => go('#/einstellungen/phasen') }),

@@ -6,7 +6,6 @@ import { icon } from './ui/icons.js';
 import { toast } from './ui/kit.js';
 import { today } from './lib/dates.js';
 import { renderToday } from './views/today.js';
-import { renderMorning } from './views/morning.js';
 import { renderWeek } from './views/week.js';
 import { renderHistory } from './views/history.js';
 import { renderReports } from './views/reports.js';
@@ -16,13 +15,11 @@ import { ensureLogin } from './views/login.js';
 import { api, autoSync } from './views/sync.js';
 import { syncPushState } from './views/push.js';
 
-const ROUTES = { heute: renderToday, morgen: renderMorning, woche: renderWeek, verlauf: renderHistory, berichte: renderReports, einstellungen: renderSettings };
+const ROUTES = { heute: renderToday, woche: renderWeek, verlauf: renderHistory, berichte: renderReports, einstellungen: renderSettings };
 const TABS = [
   ['heute', 'Heute', 'today'],
-  ['morgen', 'Morgen', 'sun'],
   ['woche', 'Woche', 'week'],
   ['verlauf', 'Verlauf', 'chart'],
-  ['berichte', 'Berichte', 'report'],
   ['einstellungen', 'Einstellungen', 'gear'],
 ];
 
@@ -55,7 +52,8 @@ function render({ keepScroll = false } = {}) {
   app.replaceChildren(page);
   window.scrollTo(0, keepScroll ? y : 0);
   lastName = name;
-  for (const b of tabbar.querySelectorAll('.tab')) b.setAttribute('aria-current', b.dataset.tab === name ? 'page' : 'false');
+  const tab = name === 'berichte' ? 'einstellungen' : name; // Berichte liegen unter den Einstellungen
+  for (const b of tabbar.querySelectorAll('.tab')) b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false');
   maybeOpenSetup();
 }
 

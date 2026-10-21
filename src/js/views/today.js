@@ -10,6 +10,7 @@ import { ringsBlock, checkList, scoreBar, phaseCard, NUT_KIND, NUT_LABEL, pill }
 import { openCheckin, openWeight } from './checkin.js';
 import { runSync } from './sync.js';
 import { suppCard } from './supplements.js';
+import { routineCard } from './morning.js';
 import { phaseAt } from '../lib/phases.js';
 
 export function renderToday(root, { snap, now, go }) {
@@ -28,6 +29,9 @@ export function renderToday(root, { snap, now, go }) {
       iconBtn('sync', { label: 'Jetzt synchronisieren', onClick: () => runSync(), cls: 'sync-btn' }),
     ],
   }));
+
+  const routine = routineCard(snap, now);
+  if (!routine.done) root.append(routine.el);
 
   const phase = phaseCard(snap, now, { onClick: () => go('#/einstellungen/phasen') });
   if (phase) root.append(phase);
@@ -89,6 +93,9 @@ export function renderToday(root, { snap, now, go }) {
 
   // Gewichtstrend 30 Tage
   root.append(weightCard(snap, now, go));
+
+  // Erledigte Morgen-Routine ganz unten
+  if (routine.done) root.append(routine.el);
 }
 
 function weightCard(snap, now, go) {

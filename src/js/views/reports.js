@@ -1,6 +1,6 @@
 // Berichte: Zeitraum wählen → Vorschau → "PDF herunterladen" (Druckdialog mit „Als PDF sichern“).
 import { h } from '../ui/h.js';
-import { btn, card, largeTitle, seg, textField, toast } from '../ui/kit.js';
+import { btn, card, iconBtn, largeTitle, seg, textField, toast } from '../ui/kit.js';
 import { weekOf } from '../lib/engine.js';
 import { addDays } from '../lib/dates.js';
 import { kw } from '../lib/format.js';
@@ -10,14 +10,14 @@ import { weekReport, biweeklyReport } from './report-doc.js';
 
 const state = { kind: 'woche', ws: null };
 
-export function renderReports(root, { snap, now, rerender }) {
+export function renderReports(root, { snap, now, rerender, go }) {
   const current = weekOf(snap, now);
   // Standard: aktuelle Woche (Zwischenstand), ältere Wochen mit ‹
   state.ws ||= current;
   const ws = state.ws;
   const noteKey = state.kind === 'woche' ? `week:${ws}` : `questions:${ws}`;
 
-  root.append(largeTitle('Berichte', { sub: 'Für den Coach – als PDF' }));
+  root.append(largeTitle('Berichte', { sub: 'Für den Coach – als PDF', left: iconBtn('chevL', { label: 'Zurück', onClick: () => go('#/einstellungen'), cls: 'back-btn' }) }));
   root.append(h('div.sticky-seg', seg([['woche', 'Wochenbericht'], ['zwei', 'Zweiwochenbericht']], state.kind, v => { state.kind = v; rerender(); })));
   root.append(weekNav(ws, {
     onPrev: () => { state.ws = addDays(ws, -7); rerender(); },
@@ -51,12 +51,17 @@ export function renderReports(root, { snap, now, rerender }) {
   const holder = h('div.doc-holder', scaler);
   const refresh = () => scaler.replaceChildren(build());
   refresh();
+  // Nur bei echten Größenänderungen neu skalieren – sonst löst das eigene Setzen der Höhe eine Schleife aus
+  let last = '';
   const ro = new ResizeObserver(() => {
-    const doc = scaler.firstElementChild;
-    if (!doc) return;
+    if (!scaler.firstElementChild) return;
     const scale = Math.min(1, holder.clientWidth / 794);
+    const height = Math.round(scaler.offsetHeight * scale);
+    const key = `${scale}:${height}`;
+    if (key === last) return;
+    last = key;
     scaler.style.transform = `scale(${scale})`;
-    holder.style.height = `${scaler.offsetHeight * scale}px`;
+    holder.style.height = `${height}px`;
   });
   ro.observe(holder);
   ro.observe(scaler);

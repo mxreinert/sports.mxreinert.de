@@ -6,8 +6,8 @@ import { num } from '../lib/format.js';
  * Container, der sein SVG bei Größenänderung neu zeichnet. Für den Druck feste Breite übergeben.
  * render(width) → SVG-Element
  */
-function responsive(render, width) {
-  const box = h('div.chart');
+function responsive(render, width, height) {
+  const box = h('div.chart', { style: height ? { height: `${height}px` } : null });
   if (width) { box.append(render(width)); return box; }
   let last = 0;
   const draw = () => {
@@ -116,7 +116,7 @@ export function lineChart({ series, labels, height = 180, width, onScrub, light 
       svg.addEventListener('pointerleave', () => { cursor.setAttribute('visibility', 'hidden'); onScrub(null); });
     }
     return svg;
-  }, width);
+  }, width, height);
 }
 
 /**

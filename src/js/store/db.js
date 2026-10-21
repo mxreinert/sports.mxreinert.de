@@ -15,6 +15,8 @@ export const snap = {
 const listeners = new Set();
 export const onChange = fn => listeners.add(fn);
 const emit = () => listeners.forEach(fn => fn());
+/** Nur neu zeichnen (z. B. Karte auf-/zuklappen), ohne Daten zu ändern */
+export const refreshView = emit;
 
 const uid = () => crypto.randomUUID();
 const nowIso = () => new Date().toISOString();

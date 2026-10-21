@@ -38,7 +38,7 @@ src/                      Web-Root (wird 1:1 ausgeliefert)
       dates.js, format.js Zeitzone Europe/Luxembourg, deutsche Formate
     store/                Datenschicht: db.js (API + Snapshot), schema.js (Tabellen), idb.js (lokal), cloud.js (Supabase + Login), demo.js
     ui/                   h() DOM-Helfer, Kit (Listen, Sheets, Felder …), Ringe, Charts, Icons
-    views/                Heute, Morgen (Routine), Woche, Verlauf, Berichte, Einstellungen, Sheets, setup.js (Overlay)
+    views/                Heute (inkl. Morgen-Routine), Woche, Verlauf, Einstellungen (inkl. Berichte), Sheets, setup.js
     env.js                öffentliche Supabase-URL + anon-Key (leer = Testmodus)
   vendor/                 supabase-js 2.117.2 (UMD, MIT)
 supabase/migrations/      SQL fürs Supabase-Projekt (RLS + 2FA-Pflicht)
